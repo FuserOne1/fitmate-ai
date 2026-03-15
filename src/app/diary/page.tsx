@@ -351,7 +351,7 @@ export default function DiaryPage() {
             )}
           </div>
           
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-4 gap-3 mb-4">
             <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
               <p className={`text-2xl font-bold ${themeConfig.colors.primaryText}`}>{currentLog.total.calories}</p>
               <p className="text-xs text-[hsl(var(--text-secondary))]">ккал</p>
@@ -370,7 +370,8 @@ export default function DiaryPage() {
             </div>
           </div>
 
-          {currentLog.items.length > 0 ? (
+          <div className="border-t border-[hsl(var(--border))] pt-4">
+            {currentLog.items.length > 0 ? (
             <div className="space-y-2">
               {currentLog.items.map((item, index) => (
                 <div key={index} className="flex justify-between items-center p-3 bg-[hsl(var(--muted))] rounded-xl">
@@ -387,6 +388,7 @@ export default function DiaryPage() {
           ) : (
             <p className="text-center text-[hsl(var(--text-secondary))] text-sm py-8">Пока ничего не записано 🍃</p>
           )}
+          </div>
         </div>
       </main>
     </div>
