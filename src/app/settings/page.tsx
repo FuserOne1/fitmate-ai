@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, User, Bell, Palette } from 'lucide-react'
+import { ArrowLeft, User, Bell, Palette, Database } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 
 export default function SettingsPage() {
@@ -33,6 +33,10 @@ export default function SettingsPage() {
             <Link href="/settings/theme" className="flex items-center p-4 rounded-xl bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 transition-colors">
               <Palette className={`w-6 h-6 ${themeConfig.colors.primaryText} mr-4`} />
               <span className="font-medium text-[hsl(var(--text-primary))]">Тема</span>
+            </Link>
+            <Link href="/settings/data" className="flex items-center p-4 rounded-xl bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 transition-colors">
+              <Database className={`w-6 h-6 ${themeConfig.colors.primaryText} mr-4`} />
+              <span className="font-medium text-[hsl(var(--text-primary))]">Данные и память</span>
             </Link>
           </div>
         </div>
