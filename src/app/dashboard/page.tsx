@@ -1,62 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Utensils, Droplets, Scale, MessageCircle, User, LogOut, TrendingUp } from 'lucide-react'
+import { Utensils, Droplets, Scale, MessageCircle, User, LogOut } from 'lucide-react'
 
 export default function DashboardPage() {
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
-  const [profile, setProfile] = useState<any>(null)
-  const supabase = createClient()
-
-  useEffect(() => {
-    checkUser()
-  }, [])
-
-  async function checkUser() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      
-      if (!user) {
-        window.location.href = '/login'
-        return
-      }
-      
-      // Загрузка профиля
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-      
-      setProfile(profile)
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    window.location.href = '/login'
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-pink-100">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-rose-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-rose-600 font-medium">Загрузка...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-100">
       {/* Header */}
@@ -65,9 +12,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-rose-500 to-pink-500 bg-clip-text text-transparent">
             FitMate AI 🌸
           </h1>
-          <Button variant="ghost" size="icon" onClick={handleSignOut}>
-            <LogOut className="w-5 h-5 text-rose-600" />
-          </Button>
         </div>
       </header>
 
@@ -76,10 +20,10 @@ export default function DashboardPage() {
         {/* Приветствие */}
         <div className="bg-white rounded-3xl p-6 shadow-lg shadow-rose-100 mb-6 animate-fade-in">
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Привет, {profile?.full_name || user?.email?.split('@')[0]}! 👋
+            Привет! 👋
           </h2>
           <p className="text-gray-600">
-            Готова к новому дню здоровых привычек?
+            Твой умный помощник для похудения
           </p>
         </div>
 
@@ -131,7 +75,7 @@ export default function DashboardPage() {
               <div className="text-xs text-gray-500">стаканов</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-500">{profile?.weight_kg || '--'}</div>
+              <div className="text-2xl font-bold text-purple-500">--</div>
               <div className="text-xs text-gray-500">вес</div>
             </div>
           </div>
