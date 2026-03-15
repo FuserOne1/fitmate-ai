@@ -15,7 +15,7 @@ type FoodItem = {
 }
 
 type DailyLog = {
-  date: string // YYYY-MM-DD
+  date: string
   items: FoodItem[]
   total: {
     calories: number
@@ -25,87 +25,37 @@ type DailyLog = {
   }
 }
 
-// Получение текущей даты в формате YYYY-MM-DD
 function getMoscowDate(): string {
-  try {
-    // Простой способ без timezone - берём текущую дату
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  } catch (e) {
-    console.error('getMoscowDate error:', e)
-    return '2026-03-15' // Fallback
-  }
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-// Конвертация даты в формат YYYY-MM-DD из разных форматов
 function parseDate(dateStr: string): string {
-  try {
-    // Если уже в формате YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      return dateStr
-    }
-    
-    // Если в формате DD.MM.YYYY
-    if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr)) {
-      const [day, month, year] = dateStr.split('.')
-      return `${year}-${month}-${day}`
-    }
-    
-    // Пытаемся распарсить как Date
-    const date = new Date(dateStr)
-    if (!isNaN(date.getTime())) {
-      const year = date.getFullYear()
-      const month = String(date.getMonth() + 1).padStart(2, '0')
-      const day = String(date.getDate()).padStart(2, '0')
-      return `${year}-${month}-${day}`
-    }
-    
-    return dateStr
-  } catch (e) {
-    console.error('parseDate error:', e, dateStr)
-    return dateStr
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr
+  if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split('.')
+    return `${year}-${month}-${day}`
   }
+  const date = new Date(dateStr)
+  if (!isNaN(date.getTime())) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  return dateStr
 }
 
-// Получение текущей даты для отображения
 function getDisplayDate(dateStr: string): string {
-  try {
-    const normalizedDate = parseDate(dateStr)
-    
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedDate)) {
-      return dateStr
-    }
-    
-    const [year, month, day] = normalizedDate.split('-')
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
-    
-    if (isNaN(date.getTime())) {
-      return dateStr
-    }
-    
-    const today = new Date()
-    const todayStr = getMoscowDate()
-    
-    if (normalizedDate === todayStr) {
-      return 'Сегодня'
-    }
-    
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayStr = getMoscowDate() // Упрощённо
-    
-    if (normalizedDate === yesterdayStr) {
-      return 'Вчера'
-    }
-    
-    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
-  } catch (e) {
-    console.error('getDisplayDate error:', e)
-    return dateStr
-  }
+  const normalizedDate = parseDate(dateStr)
+  const [year, month, day] = normalizedDate.split('-')
+  const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
+  const todayStr = getMoscowDate()
+  if (normalizedDate === todayStr) return 'Сегодня'
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
 }
 
 export default function DiaryPage() {
@@ -115,124 +65,47 @@ export default function DiaryPage() {
   const [parsedItems, setParsedItems] = useState<FoodItem[]>([])
   const [showConfirm, setShowConfirm] = useState(false)
   const [logs, setLogs] = useState<DailyLog[]>([])
-  const [selectedDate, setSelectedDate] = useState(() => {
-    try {
-      return getMoscowDate()
-    } catch (e) {
-      console.error('Error getting Moscow date:', e)
-      return new Date().toISOString().split('T')[0]
-    }
-  })
+  const [selectedDate, setSelectedDate] = useState(getMoscowDate())
 
-  console.log('Diary render - selectedDate:', selectedDate, 'logs:', logs)
-
-  // Загрузка из localStorage при первом рендере
   useEffect(() => {
-    console.log('Diary useEffect - loading from localStorage')
-    if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('fitmate-diary')
+    if (saved) {
       try {
-        const saved = localStorage.getItem('fitmate-diary')
-        console.log('Raw saved data:', saved)
-        
-        if (saved) {
-          const parsedLogs = JSON.parse(saved)
-          console.log('Parsed logs before normalization:', parsedLogs)
-
-          // Нормализуем даты
-          const normalizedLogs = parsedLogs.map((log: DailyLog) => ({
-            ...log,
-            date: parseDate(log.date),
-          }))
-          console.log('Normalized logs:', normalizedLogs)
-
-          // Проверяем, есть ли запись за сегодня
-          const today = getMoscowDate()
-          console.log('Today:', today)
-          const todayLog = normalizedLogs.find((log: DailyLog) => log.date === today)
-
-          if (!todayLog) {
-            // Добавляем запись за сегодня
-            normalizedLogs.unshift({
-              date: today,
-              items: [],
-              total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-            })
-          }
-
-          // Фильтруем только корректные записи
-          const validLogs = normalizedLogs.filter((log: DailyLog) => {
-            const isValid = log.date && /^\d{4}-\d{2}-\d{2}$/.test(log.date)
-            console.log('Log date:', log.date, 'valid:', isValid)
-            return isValid
-          })
-
-          console.log('Setting valid logs:', validLogs)
-          setLogs(validLogs)
-        } else {
-          const defaultLog = {
-            date: getMoscowDate(),
+        const parsedLogs = JSON.parse(saved)
+        const normalizedLogs = parsedLogs.map((log: DailyLog) => ({
+          ...log,
+          date: parseDate(log.date),
+        }))
+        const today = getMoscowDate()
+        const todayLog = normalizedLogs.find((log: DailyLog) => log.date === today)
+        if (!todayLog) {
+          normalizedLogs.unshift({
+            date: today,
             items: [],
             total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-          }
-          console.log('No saved data, using default:', defaultLog)
-          setLogs([defaultLog])
+          })
         }
+        const validLogs = normalizedLogs.filter((log: DailyLog) =>
+          log.date && /^\d{4}-\d{2}-\d{2}$/.test(log.date)
+        )
+        setLogs(validLogs)
       } catch (e) {
         console.error('Failed to parse diary:', e)
-        const fallbackLog = {
-          date: getMoscowDate(),
-          items: [],
-          total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-        }
-        setLogs([fallbackLog])
+        setLogs([{ date: getMoscowDate(), items: [], total: { calories: 0, protein: 0, fat: 0, carbs: 0 } }])
       }
+    } else {
+      setLogs([{ date: getMoscowDate(), items: [], total: { calories: 0, protein: 0, fat: 0, carbs: 0 } }])
     }
   }, [])
 
-  // Сохранение в localStorage при изменении
   useEffect(() => {
-    if (logs.length > 0 && typeof window !== 'undefined') {
+    if (logs.length > 0) {
       localStorage.setItem('fitmate-diary', JSON.stringify(logs))
     }
   }, [logs])
 
-  // Проверка смены даты (полночь по МСК)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const currentMoscowDate = getMoscowDate()
-      if (selectedDate !== currentMoscowDate) {
-        setSelectedDate(currentMoscowDate)
-        
-        // Проверяем, есть ли запись за новую дату
-        setLogs(prevLogs => {
-          const todayLog = prevLogs.find(log => log.date === currentMoscowDate)
-          if (!todayLog) {
-            return [
-              {
-                date: currentMoscowDate,
-                items: [],
-                total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-              },
-              ...prevLogs,
-            ]
-          }
-          return prevLogs
-        })
-      }
-    }, 60000) // Проверяем каждую минуту
-
-    return () => clearInterval(interval)
-  }, [selectedDate])
-
-  const currentLog = logs.find(log => log.date === selectedDate) || {
-    date: selectedDate,
-    items: [],
-    total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-  }
-
   async function parseFood() {
     if (!input.trim() || loading) return
-
     setLoading(true)
     try {
       const response = await fetch('/api/ai/parse-food', {
@@ -240,18 +113,16 @@ export default function DiaryPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: input }),
       })
-
       const data = await response.json()
-
       if (data.success && data.items) {
         setParsedItems(data.items)
         setShowConfirm(true)
       } else {
-        alert('Не удалось распознать продукты 😅 Попробуй описать подробнее!')
+        alert('Не удалось распознать продукты 😅')
       }
     } catch (error) {
       console.error('Parse error:', error)
-      alert('Ошибка соединения. Попробуй ещё раз!')
+      alert('Ошибка соединения')
     } finally {
       setLoading(false)
     }
@@ -261,46 +132,23 @@ export default function DiaryPage() {
     setLogs(prevLogs => {
       const newLogs = [...prevLogs]
       const todayIndex = newLogs.findIndex(log => log.date === selectedDate)
-      
-      if (todayIndex === -1) {
-        // Создаём новую запись за сегодня
-        const newLog: DailyLog = {
-          date: selectedDate,
-          items: parsedItems,
-          total: parsedItems.reduce(
-            (acc, item) => ({
-              calories: acc.calories + item.calories,
-              protein: acc.protein + item.protein,
-              fat: acc.fat + item.fat,
-              carbs: acc.carbs + item.carbs,
-            }),
-            { calories: 0, protein: 0, fat: 0, carbs: 0 }
-          ),
-        }
-        newLogs.unshift(newLog)
+      const newItems = [...parsedItems, ...(todayIndex >= 0 ? newLogs[todayIndex].items : [])]
+      const newTotal = newItems.reduce(
+        (acc, item) => ({
+          calories: acc.calories + item.calories,
+          protein: acc.protein + item.protein,
+          fat: acc.fat + item.fat,
+          carbs: acc.carbs + item.carbs,
+        }),
+        { calories: 0, protein: 0, fat: 0, carbs: 0 }
+      )
+      if (todayIndex >= 0) {
+        newLogs[todayIndex] = { ...newLogs[todayIndex], items: newItems, total: newTotal }
       } else {
-        // Обновляем существующую запись
-        const todayLog = newLogs[todayIndex]
-        const newItems = [...parsedItems, ...todayLog.items]
-        const newTotal = newItems.reduce(
-          (acc, item) => ({
-            calories: acc.calories + item.calories,
-            protein: acc.protein + item.protein,
-            fat: acc.fat + item.fat,
-            carbs: acc.carbs + item.carbs,
-          }),
-          { calories: 0, protein: 0, fat: 0, carbs: 0 }
-        )
-        newLogs[todayIndex] = {
-          ...todayLog,
-          items: newItems,
-          total: newTotal,
-        }
+        newLogs.unshift({ date: selectedDate, items: newItems, total: newTotal })
       }
-      
       return newLogs
     })
-
     setParsedItems([])
     setShowConfirm(false)
     setInput('')
@@ -310,9 +158,7 @@ export default function DiaryPage() {
     setLogs(prevLogs => {
       const newLogs = [...prevLogs]
       const todayIndex = newLogs.findIndex(log => log.date === selectedDate)
-      
       if (todayIndex === -1) return prevLogs
-      
       const todayLog = newLogs[todayIndex]
       const newItems = todayLog.items.filter((_, i) => i !== index)
       const newTotal = newItems.reduce(
@@ -324,26 +170,22 @@ export default function DiaryPage() {
         }),
         { calories: 0, protein: 0, fat: 0, carbs: 0 }
       )
-      
-      newLogs[todayIndex] = {
-        ...todayLog,
-        items: newItems,
-        total: newTotal,
-      }
-      
+      newLogs[todayIndex] = { ...todayLog, items: newItems, total: newTotal }
       return newLogs
     })
   }
 
+  const currentLog = logs.find(log => log.date === selectedDate) || {
+    date: selectedDate,
+    items: [],
+    total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+  }
+
   return (
     <div className={`min-h-screen ${themeConfig.colors.bg} transition-colors duration-300`}>
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-[hsl(var(--bg-secondary))]/80 backdrop-blur-lg border-b border-[hsl(var(--border))]">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link
-            href="/"
-            className="p-2 hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
-          >
+          <Link href="/" className="p-2 hover:bg-[hsl(var(--muted))] rounded-xl transition-colors">
             <ArrowLeft className={`w-6 h-6 ${themeConfig.colors.primaryText}`} />
           </Link>
           <div className="flex items-center gap-2">
@@ -353,13 +195,11 @@ export default function DiaryPage() {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-3xl mx-auto px-4 py-6">
-        {/* Date Selector */}
-        <div className="bg-white rounded-2xl p-4 shadow-md shadow-rose-100 mb-6">
+        <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-md border border-[hsl(var(--border))] mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <History className="w-5 h-5 text-rose-500" />
+            <h2 className="text-lg font-bold text-[hsl(var(--text-primary))] flex items-center gap-2">
+              <History className={`w-5 h-5 ${themeConfig.colors.primaryText}`} />
               {getDisplayDate(selectedDate)}
             </h2>
           </div>
@@ -370,8 +210,8 @@ export default function DiaryPage() {
                 onClick={() => setSelectedDate(log.date)}
                 className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
                   selectedDate === log.date
-                    ? 'bg-rose-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? `${themeConfig.colors.primaryBg} text-white`
+                    : 'bg-[hsl(var(--muted))] text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--muted))]/80'
                 }`}
               >
                 {getDisplayDate(log.date)}
@@ -380,59 +220,43 @@ export default function DiaryPage() {
           </div>
         </div>
 
-        {/* Input Section */}
-        <div className="bg-white rounded-3xl p-6 shadow-lg shadow-rose-100 mb-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">
-            🍽️ Что съела?
-          </h2>
+        <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))] mb-6">
+          <h2 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4">🍽️ Что съела?</h2>
           <div className="space-y-3">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Например: 9 наггетсов, 2 больших теоса, протеиновый коктейль"
-              className="w-full resize-none bg-rose-50 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 min-h-[100px]"
+              className="w-full resize-none bg-[hsl(var(--muted))] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/50 text-[hsl(var(--text-primary))]"
             />
             <button
               onClick={parseFood}
               disabled={loading || !input.trim()}
-              className="w-full py-3 bg-rose-500 text-white rounded-xl hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium"
+              className={`w-full py-3 ${themeConfig.colors.primaryBg} text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium`}
             >
               {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Анализирую...
-                </>
+                <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Анализирую...</>
               ) : (
-                <>
-                  <Send className="w-5 h-5" />
-                  Распознать
-                </>
+                <><Send className="w-5 h-5" />Распознать</>
               )}
             </button>
           </div>
         </div>
 
-        {/* Confirmation Modal */}
         {showConfirm && (
-          <div className="bg-white rounded-3xl p-6 shadow-lg shadow-rose-100 mb-6 animate-fade-in">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">
-              ✅ Подтверди продукты
-            </h2>
+          <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))] mb-6 animate-fade-in">
+            <h2 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4">✅ Подтверди продукты</h2>
             <div className="space-y-3 mb-4">
               {parsedItems.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center p-3 bg-rose-50 rounded-xl"
-                >
+                <div key={index} className="flex justify-between items-center p-3 bg-[hsl(var(--muted))] rounded-xl">
                   <div>
-                    <p className="font-medium text-gray-800">{item.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {item.weight ? `${item.weight}г • ` : ''}
-                      {item.calories} ккал
+                    <p className="font-medium text-[hsl(var(--text-primary))]">{item.name}</p>
+                    <p className="text-xs text-[hsl(var(--text-secondary))]">
+                      {item.weight ? `${item.weight}г • ` : ''}{item.calories} ккал
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-[hsl(var(--text-secondary))]">
                       Б: {item.protein}г | Ж: {item.fat}г | У: {item.carbs}г
                     </p>
                   </div>
@@ -441,84 +265,58 @@ export default function DiaryPage() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => {
-                  setShowConfirm(false)
-                  setParsedItems([])
-                }}
-                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                onClick={() => { setShowConfirm(false); setParsedItems([]); }}
+                className="flex-1 py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors font-medium"
               >
                 Отмена
               </button>
               <button
                 onClick={addToDiary}
-                className="flex-1 py-3 bg-rose-500 text-white rounded-xl hover:bg-rose-600 transition-colors font-medium flex items-center justify-center gap-2"
+                className={`flex-1 py-3 ${themeConfig.colors.primaryBg} text-white rounded-xl hover:opacity-90 transition-colors font-medium flex items-center justify-center gap-2`}
               >
-                <Plus className="w-5 h-5" />
-                Добавить
+                <Plus className="w-5 h-5" />Добавить
               </button>
             </div>
           </div>
         )}
 
-        {/* Today's Summary */}
-        <div className="bg-white rounded-3xl p-6 shadow-lg shadow-rose-100 mb-6">
-          <h2 className="text-lg font-bold text-gray-800 mb-4">
-            📊 {getDisplayDate(selectedDate)}
-          </h2>
+        <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))] mb-6">
+          <h2 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4">📊 {getDisplayDate(selectedDate)}</h2>
           <div className="grid grid-cols-4 gap-3 mb-4">
-            <div className="text-center p-3 bg-rose-50 rounded-xl">
-              <p className="text-2xl font-bold text-rose-600">
-                {currentLog.total.calories}
-              </p>
-              <p className="text-xs text-gray-500">ккал</p>
+            <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <p className={`text-2xl font-bold ${themeConfig.colors.primaryText}`}>{currentLog.total.calories}</p>
+              <p className="text-xs text-[hsl(var(--text-secondary))]">ккал</p>
             </div>
-            <div className="text-center p-3 bg-blue-50 rounded-xl">
-              <p className="text-2xl font-bold text-blue-600">
-                {currentLog.total.protein}
-              </p>
-              <p className="text-xs text-gray-500">белки</p>
+            <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <p className="text-2xl font-bold text-blue-500">{currentLog.total.protein}</p>
+              <p className="text-xs text-[hsl(var(--text-secondary))]">белки</p>
             </div>
-            <div className="text-center p-3 bg-yellow-50 rounded-xl">
-              <p className="text-2xl font-bold text-yellow-600">
-                {currentLog.total.fat}
-              </p>
-              <p className="text-xs text-gray-500">жиры</p>
+            <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <p className="text-2xl font-bold text-yellow-500">{currentLog.total.fat}</p>
+              <p className="text-xs text-[hsl(var(--text-secondary))]">жиры</p>
             </div>
-            <div className="text-center p-3 bg-green-50 rounded-xl">
-              <p className="text-2xl font-bold text-green-600">
-                {currentLog.total.carbs}
-              </p>
-              <p className="text-xs text-gray-500">углеводы</p>
+            <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <p className="text-2xl font-bold text-green-500">{currentLog.total.carbs}</p>
+              <p className="text-xs text-[hsl(var(--text-secondary))]">углеводы</p>
             </div>
           </div>
 
-          {/* Food List */}
-          {currentLog.items.length > 0 && (
+          {currentLog.items.length > 0 ? (
             <div className="space-y-2">
               {currentLog.items.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center p-3 bg-gray-50 rounded-xl"
-                >
+                <div key={index} className="flex justify-between items-center p-3 bg-[hsl(var(--muted))] rounded-xl">
                   <div>
-                    <p className="font-medium text-gray-800">{item.name}</p>
-                    <p className="text-xs text-gray-500">{item.calories} ккал</p>
+                    <p className="font-medium text-[hsl(var(--text-primary))]">{item.name}</p>
+                    <p className="text-xs text-[hsl(var(--text-secondary))]">{item.calories} ккал</p>
                   </div>
-                  <button
-                    onClick={() => removeItem(index)}
-                    className="p-2 hover:bg-red-100 rounded-lg transition-colors"
-                  >
+                  <button onClick={() => removeItem(index)} className="p-2 hover:bg-red-500/20 rounded-lg transition-colors">
                     <Trash2 className="w-4 h-4 text-red-500" />
                   </button>
                 </div>
               ))}
             </div>
-          )}
-
-          {currentLog.items.length === 0 && (
-            <p className="text-center text-gray-500 text-sm py-8">
-              Пока ничего не записано 🍃
-            </p>
+          ) : (
+            <p className="text-center text-[hsl(var(--text-secondary))] text-sm py-8">Пока ничего не записано 🍃</p>
           )}
         </div>
       </main>
