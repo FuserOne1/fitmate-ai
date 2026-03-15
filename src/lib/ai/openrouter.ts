@@ -9,13 +9,13 @@ if (!apiKey) {
 
 export const openrouter = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: apiKey || 'dummy-key', // Явно передаём apiKey
+  apiKey: apiKey || 'dummy-key',
 })
 
 // Основная модель для анализа изображений и чата
 export const AI_MODEL = {
-  VISION: 'google/gemini-2.5-flash-preview',
-  CHAT: 'google/gemini-2.5-flash-preview',
+  VISION: 'google/gemini-2.5-flash', // Для анализа фото
+  CHAT: 'google/gemini-2.5-flash',   // Для текстового чата
 }
 
 // Функция для чата
