@@ -14,8 +14,8 @@ export const openrouter = new OpenAI({
 
 // Основная модель для анализа изображений и чата
 export const AI_MODEL = {
-  VISION: 'google/gemini-2.5-flash', // Для анализа фото
-  CHAT: 'google/gemini-2.5-flash',   // Для текстового чата
+  VISION: 'google/gemini-3-flash-preview', // Для анализа фото
+  CHAT: 'google/gemini-3-flash-preview',   // Для текстового чата
 }
 
 // Функция для чата
