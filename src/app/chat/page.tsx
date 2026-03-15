@@ -3,11 +3,28 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Send, Sparkles, Utensils } from 'lucide-react'
+import { useTheme } from '@/lib/theme'
 
 type Message = {
   role: 'user' | 'assistant'
   content: string
   timestamp: number
+  foodEntry?: {
+    items: Array<{
+      name: string
+      calories: number
+      protein: number
+      fat: number
+      carbs: number
+      weight?: number
+    }>
+    total: {
+      calories: number
+      protein: number
+      fat: number
+      carbs: number
+    }
+  }
 }
 
 type DiaryData = {
@@ -38,6 +55,25 @@ function renderMarkdown(text: string) {
   })
 }
 
+// Парсинг food entry из ответа AI
+function parseFoodEntry(content: string) {
+  const match = content.match(/\[FOOD_ENTRY\]([\s\S]*?)\[\/FOOD_ENTRY\]/)
+  if (!match) return null
+  
+  try {
+    const json = JSON.parse(match[1].trim())
+    return json
+  } catch (e) {
+    console.error('Failed to parse food entry:', e)
+    return null
+  }
+}
+
+// Очистка контента от food entry блока
+function cleanContent(content: string) {
+  return content.replace(/\[FOOD_ENTRY\][\s\S]*?\[\/FOOD_ENTRY\]/g, '').trim()
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== 'undefined') {
@@ -55,6 +91,7 @@ export default function ChatPage() {
     }]
   })
   const [diaryData, setDiaryData] = useState<DiaryData | null>(null)
+  const [pendingFoodEntry, setPendingFoodEntry] = useState<Message['foodEntry'] | null>(null)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -127,11 +164,21 @@ export default function ChatPage() {
       const data = await response.json()
 
       if (response.ok && data.data) {
+        // Парсим food entry если есть
+        const foodEntry = parseFoodEntry(data.data)
+        const cleanedContent = cleanContent(data.data)
+        
         setMessages(prev => [...prev, { 
           role: 'assistant', 
-          content: data.data,
-          timestamp: Date.now()
+          content: cleanedContent,
+          timestamp: Date.now(),
+          foodEntry: foodEntry || undefined,
         }])
+        
+        // Если есть food entry, показываем pending
+        if (foodEntry) {
+          setPendingFoodEntry(foodEntry)
+        }
       } else {
         setMessages(prev => [...prev, { 
           role: 'assistant',
@@ -168,6 +215,65 @@ export default function ChatPage() {
     }
   }
 
+  function addFoodToDiary() {
+    if (!pendingFoodEntry) return
+    
+    // Загружаем текущий дневник
+    const saved = localStorage.getItem('fitmate-diary')
+    let logs = []
+    
+    if (saved) {
+      try {
+        logs = JSON.parse(saved)
+      } catch {}
+    }
+    
+    // Находим запись за сегодня
+    const today = new Date().toISOString().split('T')[0]
+    const todayIndex = logs.findIndex((log: any) => log.date === today)
+    
+    const newEntry = {
+      name: 'Из чата',
+      ...pendingFoodEntry,
+      items: pendingFoodEntry.items.map(item => ({
+        ...item,
+        name: item.name || 'Продукт'
+      }))
+    }
+    
+    if (todayIndex >= 0) {
+      // Обновляем существующую запись
+      logs[todayIndex].items = [...logs[todayIndex].items, ...pendingFoodEntry.items]
+      logs[todayIndex].total = {
+        calories: logs[todayIndex].total.calories + pendingFoodEntry.total.calories,
+        protein: logs[todayIndex].total.protein + pendingFoodEntry.total.protein,
+        fat: logs[todayIndex].total.fat + pendingFoodEntry.total.fat,
+        carbs: logs[todayIndex].total.carbs + pendingFoodEntry.total.carbs,
+      }
+    } else {
+      // Создаём новую запись
+      logs.unshift({
+        date: today,
+        items: pendingFoodEntry.items,
+        total: pendingFoodEntry.total,
+      })
+    }
+    
+    // Сохраняем
+    localStorage.setItem('fitmate-diary', JSON.stringify(logs))
+    setPendingFoodEntry(null)
+    
+    // Обновляем diaryData
+    setDiaryData({
+      calories: logs[0].total.calories,
+      protein: logs[0].total.protein,
+      fat: logs[0].total.fat,
+      carbs: logs[0].total.carbs,
+    })
+    
+    alert('✅ Добавлено в дневник!')
+  }
+
   return (
     <div className="min-h-screen bg-[hsl(var(--bg-primary))] transition-colors duration-300">
       <header className="sticky top-0 z-50 bg-[hsl(var(--bg-secondary))]/80 backdrop-blur-lg border-b border-[hsl(var(--border))]">
@@ -188,6 +294,38 @@ export default function ChatPage() {
       </header>
 
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 overflow-hidden flex flex-col">
+        {/* Pending Food Entry */}
+        {pendingFoodEntry && (
+          <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-lg border border-[hsl(var(--border))] mb-4 animate-fade-in">
+            <div className="flex items-center gap-2 mb-3">
+              <Utensils className={`w-5 h-5 ${themeConfig.colors.primaryText}`} />
+              <h3 className="font-bold text-[hsl(var(--text-primary))]">Записать в дневник?</h3>
+            </div>
+            <div className="space-y-2 mb-4">
+              {pendingFoodEntry.items.map((item, index) => (
+                <div key={index} className="flex justify-between items-center p-2 bg-[hsl(var(--muted))] rounded-lg">
+                  <span className="text-sm font-medium text-[hsl(var(--text-primary))]">{item.name}</span>
+                  <span className="text-xs text-[hsl(var(--text-secondary))]">{item.calories} ккал</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPendingFoodEntry(null)}
+                className="flex-1 py-2 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-lg hover:bg-[hsl(var(--muted))]/80 transition-colors text-sm font-medium"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={addFoodToDiary}
+                className={`flex-1 py-2 ${themeConfig.colors.primaryBg} text-white rounded-lg hover:opacity-90 transition-colors text-sm font-medium flex items-center justify-center gap-2`}
+              >
+                <span className="text-lg">+</span>
+                Добавить
+              </button>
+            </div>
+          </div>
+        )}
         {diaryData && diaryData.calories > 0 && (
           <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-md border border-[hsl(var(--border))] mb-4">
             <div className="flex items-center gap-2 mb-2">

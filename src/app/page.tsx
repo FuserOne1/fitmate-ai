@@ -22,11 +22,40 @@ const CUTE_PHRASES = [
 export default function HomePage() {
   const [phrase, setPhrase] = useState(CUTE_PHRASES[0])
   const { themeConfig } = useTheme()
+  const [diaryData, setDiaryData] = useState({ calories: 0, protein: 0, fat: 0, carbs: 0 })
 
   useEffect(() => {
     // Выбираем случайную фразу при загрузке
     const random = CUTE_PHRASES[Math.floor(Math.random() * CUTE_PHRASES.length)]
     setPhrase(random)
+  }, [])
+
+  useEffect(() => {
+    // Загружаем данные из дневника
+    const loadDiaryData = () => {
+      const saved = localStorage.getItem('fitmate-diary')
+      if (saved) {
+        try {
+          const logs = JSON.parse(saved)
+          const today = logs[0]
+          if (today && today.total) {
+            setDiaryData(today.total)
+          }
+        } catch {}
+      }
+    }
+    
+    loadDiaryData()
+    
+    // Слушаем изменения в localStorage
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'fitmate-diary') {
+        loadDiaryData()
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
   return (
     <div className={`min-h-screen ${themeConfig.colors.bg} transition-colors duration-300`}>
@@ -98,16 +127,16 @@ export default function HomePage() {
           <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4">📊 Сегодня</h3>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
-              <div className={`text-2xl font-bold ${themeConfig.colors.primaryText}`}>0</div>
+              <div className={`text-2xl font-bold ${themeConfig.colors.primaryText}`}>{diaryData.calories}</div>
               <div className="text-xs text-[hsl(var(--text-secondary))]">ккал</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-500">0</div>
-              <div className="text-xs text-[hsl(var(--text-secondary))]">стаканов</div>
+              <div className="text-2xl font-bold text-blue-500">{diaryData.protein}</div>
+              <div className="text-xs text-[hsl(var(--text-secondary))]">белки</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-500">--</div>
-              <div className="text-xs text-[hsl(var(--text-secondary))]">вес</div>
+              <div className="text-2xl font-bold text-yellow-500">{diaryData.fat}</div>
+              <div className="text-xs text-[hsl(var(--text-secondary))]">жиры</div>
             </div>
           </div>
         </div>
