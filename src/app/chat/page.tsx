@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Send, Sparkles } from 'lucide-react'
-import { analyzeImage, chatWithAI } from '@/lib/ai/openrouter'
+import { chatWithAI } from '@/lib/ai/openrouter'
 
 type Message = {
   role: 'user' | 'assistant'
