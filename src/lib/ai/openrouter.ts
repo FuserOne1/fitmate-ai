@@ -1,9 +1,15 @@
 import OpenAI from 'openai'
 
 // OpenRouter клиент для работы с AI моделями
+const apiKey = process.env.OPENROUTER_API_KEY
+
+if (!apiKey) {
+  console.error('❌ OPENROUTER_API_KEY is missing!')
+}
+
 export const openrouter = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: apiKey || 'dummy-key', // Явно передаём apiKey
 })
 
 // Основная модель для анализа изображений и чата
