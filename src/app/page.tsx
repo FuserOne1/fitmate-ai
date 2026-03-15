@@ -150,40 +150,65 @@ export default function HomePage() {
         </div>
 
         {/* Статистика за день */}
-        <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))] mb-6">
-          <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4">📊 Сегодня</h3>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="text-center p-4 bg-[hsl(var(--muted))] rounded-2xl">
-              <div className={`text-3xl font-bold ${themeConfig.colors.primaryText} mb-1`}>{diaryData.calories}</div>
-              <div className="text-xs text-[hsl(var(--text-secondary))]">ккал</div>
-            </div>
-            <div className="text-center p-4 bg-blue-500/10 rounded-2xl">
-              <div className="text-3xl font-bold text-blue-500 mb-1">{waterIntake}</div>
-              <div className="text-xs text-[hsl(var(--text-secondary))]">стаканов</div>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
-              <div className="text-lg font-bold text-[hsl(var(--text-primary))]">{diaryData.protein}</div>
-              <div className="text-xs text-[hsl(var(--text-secondary))]">белки</div>
-            </div>
-            <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
-              <div className="text-lg font-bold text-[hsl(var(--text-primary))]">{diaryData.fat}</div>
-              <div className="text-xs text-[hsl(var(--text-secondary))]">жиры</div>
-            </div>
-            <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
-              <div className="text-lg font-bold text-[hsl(var(--text-primary))]">{diaryData.carbs}</div>
-              <div className="text-xs text-[hsl(var(--text-secondary))]">углеводы</div>
-            </div>
-          </div>
-          {weight && (
-            <div className="mt-4 pt-4 border-t border-[hsl(var(--border))]">
-              <div className="text-center">
-                <div className="text-sm text-[hsl(var(--text-secondary))] mb-1">⚖️ Вес</div>
-                <div className="text-2xl font-bold text-purple-500">{weight} кг</div>
+        <div className="space-y-4 mb-6">
+          {/* КБЖУ */}
+          <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))]">
+            <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4 flex items-center gap-2">
+              <span className="text-xl">🍽️</span>
+              КБЖУ за сегодня
+            </h3>
+            <div className="grid grid-cols-4 gap-3">
+              <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+                <div className={`text-2xl font-bold ${themeConfig.colors.primaryText}`}>{diaryData.calories}</div>
+                <div className="text-xs text-[hsl(var(--text-secondary))]">ккал</div>
+              </div>
+              <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+                <div className="text-lg font-bold text-blue-500">{diaryData.protein}</div>
+                <div className="text-xs text-[hsl(var(--text-secondary))]">белки</div>
+              </div>
+              <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+                <div className="text-lg font-bold text-yellow-500">{diaryData.fat}</div>
+                <div className="text-xs text-[hsl(var(--text-secondary))]">жиры</div>
+              </div>
+              <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+                <div className="text-lg font-bold text-green-500">{diaryData.carbs}</div>
+                <div className="text-xs text-[hsl(var(--text-secondary))]">углеводы</div>
               </div>
             </div>
-          )}
+          </div>
+
+          {/* Вода */}
+          <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))]">
+            <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4 flex items-center gap-2">
+              <span className="text-xl">💧</span>
+              Вода за сегодня
+            </h3>
+            <div className="text-center p-4 bg-blue-500/10 rounded-2xl">
+              <div className="text-4xl font-bold text-blue-500 mb-1">{waterIntake}</div>
+              <div className="text-sm text-[hsl(var(--text-secondary))]">стаканов выпито</div>
+            </div>
+          </div>
+
+          {/* Вес */}
+          <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))]">
+            <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4 flex items-center gap-2">
+              <span className="text-xl">⚖️</span>
+              Вес
+            </h3>
+            {weight ? (
+              <div className="text-center p-4 bg-purple-500/10 rounded-2xl">
+                <div className="text-4xl font-bold text-purple-500 mb-1">{weight}</div>
+                <div className="text-sm text-[hsl(var(--text-secondary))]">кг</div>
+              </div>
+            ) : (
+              <div className="text-center p-4 bg-[hsl(var(--muted))] rounded-2xl">
+                <div className="text-sm text-[hsl(var(--text-secondary))]">Вес ещё не записан</div>
+                <Link href="/weight" className={`text-sm ${themeConfig.colors.primaryText} hover:underline mt-2 inline-block`}>
+                  Записать вес →
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Настройки */}
