@@ -29,7 +29,7 @@ export default function ChatPage() {
     }
     return [{
       role: 'assistant',
-      content: 'Привет, Маша! Я твой AI-помощник FitMate! 💕\n\nМогу помочь с:\n• Вопросами о питании\n• Советами по тренировкам\n• Мотивацией\n• Расчётом калорий\n\nА ещё я знаю, что ты сегодня ела — могу помочь записать обед! 😊',
+      content: 'Привет, Маша! Я твой AI-помощник FitMate! 💕\n\nМогу помочь с:\n• Вопросами о питании\n• Советами по тренировкам\n• Мотивацией\n• Расчётом калорий\n\nСпрашивай что угодно! 😊',
       timestamp: Date.now(),
     }]
   })
@@ -69,34 +69,62 @@ export default function ChatPage() {
 
   async function sendMessage() {
     if (!input.trim() || loading) return
-    const userMessage: Message = { role: 'user', content: input, timestamp: Date.now() }
+
+    const userMessage: Message = { 
+      role: 'user', 
+      content: input.trim(),
+      timestamp: Date.now()
+    }
+    
+    // Сразу добавляем сообщение пользователя в UI
     setMessages(prev => [...prev, userMessage])
+    const currentMessages = [...messages, userMessage]
     setInput('')
     setLoading(true)
 
     try {
-      const diaryContext = diaryData
-        ? `\n\n[КОНТЕКСТ: Сегодня Маша уже съела на ${diaryData.calories} ккал. Б: ${diaryData.protein}г, Ж: ${diaryData.fat}г, У: ${diaryData.carbs}г]`
-        : ''
+      // Формируем контекст из дневника
+      const diaryContext = diaryData && diaryData.calories > 0
+        ? `Сегодня Маша уже съела на ${diaryData.calories} ккал. Б: ${diaryData.protein}г, Ж: ${diaryData.fat}г, У: ${diaryData.carbs}г`
+        : 'Дневник питания пока пустой'
+
+      // Отправляем ТОЛЬКО историю сообщений (без системных)
+      const chatHistory = currentMessages.map(m => ({ 
+        role: m.role, 
+        content: m.content 
+      }))
 
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          messages: chatHistory,
           diaryContext,
         }),
       })
+
       const data = await response.json()
 
       if (response.ok && data.data) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.data, timestamp: Date.now() }])
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: data.data,
+          timestamp: Date.now()
+        }])
       } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: `Ошибка: ${data.error || 'Что-то пошло не так 😅'}`, timestamp: Date.now() }])
+        setMessages(prev => [...prev, { 
+          role: 'assistant',
+          content: `Ошибка: ${data.error || 'Что-то пошло не так 😅'}`,
+          timestamp: Date.now()
+        }])
       }
     } catch (error) {
       console.error('Chat error:', error)
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Ошибка соединения. Проверь интернет 💕', timestamp: Date.now() }])
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Ошибка соединения. Проверь интернет и попробуй снова 💕',
+        timestamp: Date.now(),
+      }])
     } finally {
       setLoading(false)
     }
