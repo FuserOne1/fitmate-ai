@@ -46,11 +46,41 @@ export default function WeightPage() {
     const now = new Date()
     const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
     
+    const weightNum = parseFloat(weight)
+    const fatPercentNum = fatPercent ? parseFloat(fatPercent) : undefined
+    const muscleMassNum = muscleMass ? parseFloat(muscleMass) : undefined
+    
+    // Валидация пропорций тела
+    if (fatPercentNum !== undefined && muscleMassNum !== undefined) {
+      const fatMassKg = (weightNum * fatPercentNum) / 100
+      const otherMass = weightNum - fatMassKg - muscleMassNum
+      const otherPercent = (otherMass / weightNum) * 100
+      
+      // otherMass включает: кости, воду, органы, минералы
+      // Нормально: 10-20% (кости ~15%, вода ~10-15% от массы)
+      if (otherMass < 0) {
+        alert(`❌ Невозможные пропорции!\n\nСумма жира (${fatMassKg.toFixed(1)} кг) и мышц (${muscleMassNum.toFixed(1)} кг) превышает вес (${weightNum} кг)\n\nПроверь данные`)
+        return
+      }
+      
+      if (otherPercent < 5 || otherPercent > 35) {
+        const confirmSave = confirm(
+          `⚠️ Странные пропорции!\n\n` +
+          `Жир: ${fatMassKg.toFixed(1)} кг (${fatPercentNum}%)\n` +
+          `Мышцы: ${muscleMassNum.toFixed(1)} кг\n` +
+          `Остальное: ${otherMass.toFixed(1)} кг (${otherPercent.toFixed(1)}%)\n\n` +
+          `В норме остальное (кости, вода, органы): 10-20%\n\n` +
+          `Всё равно сохранить?`
+        )
+        if (!confirmSave) return
+      }
+    }
+    
     const newLog: WeightLog & { time?: string } = {
-      date: `${today}_${now.getTime()}`, // Уникальный ID с временем
-      weight: parseFloat(weight),
-      fatPercent: fatPercent ? parseFloat(fatPercent) : undefined,
-      muscleMass: muscleMass ? parseFloat(muscleMass) : undefined,
+      date: `${today}_${now.getTime()}`,
+      weight: weightNum,
+      fatPercent: fatPercentNum,
+      muscleMass: muscleMassNum,
       time: timeStr
     }
 
@@ -81,11 +111,11 @@ export default function WeightPage() {
       const prevLog = currentLogs[0]
       const weightDiff = newLog.weight - prevLog.weight
       let message = `✅ Вес записан!\n\n📊 Прогресс:\nВес: ${weightDiff >= 0 ? '+' : ''}${weightDiff.toFixed(1)} кг`
-      if (prevLog.fatPercent && newLog.fatPercent) {
+      if (prevLog.fatPercent !== undefined && newLog.fatPercent !== undefined) {
         const fatDiff = newLog.fatPercent - prevLog.fatPercent
         message += `\nЖир: ${fatDiff >= 0 ? '+' : ''}${fatDiff.toFixed(1)}%`
       }
-      if (prevLog.muscleMass && newLog.muscleMass) {
+      if (prevLog.muscleMass !== undefined && newLog.muscleMass !== undefined) {
         const muscleDiff = newLog.muscleMass - prevLog.muscleMass
         message += `\nМышцы: ${muscleDiff >= 0 ? '+' : ''}${muscleDiff.toFixed(1)} кг`
       }
@@ -214,6 +244,11 @@ export default function WeightPage() {
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-bold text-orange-500">{latestLog.fatPercent}</span>
                     <span className="text-sm text-[hsl(var(--text-secondary))]">%</span>
+                  </div>
+                  <div className="mt-2 text-center">
+                    <span className="text-sm text-[hsl(var(--text-secondary))]">
+                      🔹 {(latestLog.weight * latestLog.fatPercent / 100).toFixed(1)} кг жира
+                    </span>
                   </div>
                 </div>
               )}
@@ -346,10 +381,10 @@ export default function WeightPage() {
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-purple-500 font-bold">{log.weight} кг</span>
                         {log.fatPercent !== undefined && (
-                          <span className="text-orange-500">🔹 {log.fatPercent}% жира</span>
+                          <span className="text-orange-500">🔹 {log.fatPercent}% ({(log.weight * log.fatPercent / 100).toFixed(1)} кг)</span>
                         )}
                         {log.muscleMass !== undefined && (
-                          <span className="text-blue-500">💪 {log.muscleMass} кг мышц</span>
+                          <span className="text-blue-500">💪 {log.muscleMass} кг</span>
                         )}
                       </div>
                     </div>
