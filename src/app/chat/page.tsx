@@ -11,20 +11,11 @@ type Message = {
 }
 
 type DiaryData = {
-  items: Array<{
-    name: string
-    calories: number
-    protein: number
-    fat: number
-    carbs: number
-  }>
-  total: {
-    calories: number
-    protein: number
-    fat: number
-    carbs: number
-  }
-}
+  calories: number
+  protein: number
+  fat: number
+  carbs: number
+} | null
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -57,7 +48,10 @@ export default function ChatPage() {
       if (saved) {
         try {
           const logs = JSON.parse(saved)
-          setDiaryData(logs[0]?.total || { calories: 0, protein: 0, fat: 0, carbs: 0 })
+          const today = logs[0]
+          if (today && today.total) {
+            setDiaryData(today.total)
+          }
         } catch {}
       }
     }
