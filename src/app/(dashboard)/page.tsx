@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Utensils, Droplets, Scale, MessageCircle, User, LogOut } from 'lucide-react'
+import { Utensils, Droplets, Scale, MessageCircle, User, LogOut, TrendingUp } from 'lucide-react'
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -32,7 +33,7 @@ export default function DashboardPage() {
         .eq('id', user.id)
         .single()
       
-      console.log('Profile:', profile)
+      setProfile(profile)
     } catch (error) {
       console.error('Error:', error)
     } finally {
@@ -75,7 +76,7 @@ export default function DashboardPage() {
         {/* Приветствие */}
         <div className="bg-white rounded-3xl p-6 shadow-lg shadow-rose-100 mb-6 animate-fade-in">
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Привет, {user?.email?.split('@')[0]}! 👋
+            Привет, {profile?.full_name || user?.email?.split('@')[0]}! 👋
           </h2>
           <p className="text-gray-600">
             Готова к новому дню здоровых привычек?
@@ -130,7 +131,7 @@ export default function DashboardPage() {
               <div className="text-xs text-gray-500">стаканов</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-500">--</div>
+              <div className="text-2xl font-bold text-purple-500">{profile?.weight_kg || '--'}</div>
               <div className="text-xs text-gray-500">вес</div>
             </div>
           </div>
