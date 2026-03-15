@@ -37,8 +37,21 @@ export default function WaterWidget({}: WaterWidgetProps) {
         } catch {}
       }
     }
+    
+    // Слушаем стандартные события storage
     window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
+    
+    // Слушаем наше кастомное событие для мгновенного обновления
+    window.addEventListener('fitmate-water-updated', (e: any) => {
+      if (e.detail?.intake) {
+        setIntake(e.detail.intake)
+      }
+    })
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage)
+      window.removeEventListener('fitmate-water-updated', handleStorage)
+    }
   }, [])
 
   const handleQuickAdd = (volume: number) => {
@@ -58,7 +71,10 @@ export default function WaterWidget({}: WaterWidgetProps) {
     }
 
     localStorage.setItem('fitmate-water', JSON.stringify(logs))
+    
+    // Триггерим обновление для всех виджетов
     window.dispatchEvent(new Event('storage'))
+    window.dispatchEvent(new CustomEvent('fitmate-water-updated', { detail: { intake: newIntake } }))
     
     // Закрываем меню
     setIsOpen(false)
