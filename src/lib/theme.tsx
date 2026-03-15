@@ -22,10 +22,10 @@ const themes: Record<Theme, ThemeConfig> = {
     emoji: '🌸',
     colors: {
       primary: '#f43f5e',
-      primaryBg: 'bg-rose-500',
-      primaryText: 'text-rose-500',
+      primaryBg: 'bg-[hsl(var(--primary))]',
+      primaryText: 'text-[hsl(var(--primary))]',
       gradient: 'from-rose-50 to-pink-100',
-      bg: 'bg-gradient-to-br from-rose-50 to-pink-100',
+      bg: 'bg-[hsl(var(--bg-primary))]',
     },
   },
   lavender: {
@@ -33,10 +33,10 @@ const themes: Record<Theme, ThemeConfig> = {
     emoji: '💜',
     colors: {
       primary: '#8b5cf6',
-      primaryBg: 'bg-violet-500',
-      primaryText: 'text-violet-500',
+      primaryBg: 'bg-[hsl(var(--primary))]',
+      primaryText: 'text-[hsl(var(--primary))]',
       gradient: 'from-violet-50 to-purple-100',
-      bg: 'bg-gradient-to-br from-violet-50 to-purple-100',
+      bg: 'bg-[hsl(var(--bg-primary))]',
     },
   },
   peach: {
@@ -44,21 +44,21 @@ const themes: Record<Theme, ThemeConfig> = {
     emoji: '🍑',
     colors: {
       primary: '#f97316',
-      primaryBg: 'bg-orange-500',
-      primaryText: 'text-orange-500',
+      primaryBg: 'bg-[hsl(var(--primary))]',
+      primaryText: 'text-[hsl(var(--primary))]',
       gradient: 'from-orange-50 to-amber-100',
-      bg: 'bg-gradient-to-br from-orange-50 to-amber-100',
+      bg: 'bg-[hsl(var(--bg-primary))]',
     },
   },
   sage: {
     name: 'Шалфей',
     emoji: '🌿',
     colors: {
-      primary: '#6a9b6a',
-      primaryBg: 'bg-emerald-500',
-      primaryText: 'text-emerald-500',
+      primary: '#22c55e',
+      primaryBg: 'bg-[hsl(var(--primary))]',
+      primaryText: 'text-[hsl(var(--primary))]',
       gradient: 'from-emerald-50 to-green-100',
-      bg: 'bg-gradient-to-br from-emerald-50 to-green-100',
+      bg: 'bg-[hsl(var(--bg-primary))]',
     },
   },
   dark: {
@@ -66,8 +66,8 @@ const themes: Record<Theme, ThemeConfig> = {
     emoji: '🌙',
     colors: {
       primary: '#ec4899',
-      primaryBg: 'bg-pink-500',
-      primaryText: 'text-pink-400',
+      primaryBg: 'bg-[hsl(var(--primary))]',
+      primaryText: 'text-[hsl(var(--primary))]',
       gradient: 'from-gray-900 to-gray-800',
       bg: 'bg-[hsl(var(--bg-primary))]',
     },
