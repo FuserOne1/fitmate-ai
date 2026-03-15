@@ -24,7 +24,7 @@ export default function HomePage() {
   const { themeConfig } = useTheme()
   const [diaryData, setDiaryData] = useState({ calories: 0, protein: 0, fat: 0, carbs: 0 })
   const [waterIntake, setWaterIntake] = useState(0)
-  const [weight, setWeight] = useState<number | null>(null)
+  const [weightData, setWeightData] = useState<{weight: number, fatPercent?: number, muscleMass?: number} | null>(null)
 
   useEffect(() => {
     // Выбираем случайную фразу при загрузке
@@ -66,7 +66,11 @@ export default function HomePage() {
         try {
           const logs = JSON.parse(weightSaved)
           if (logs && logs.length > 0) {
-            setWeight(logs[0].weight)
+            setWeightData({
+              weight: logs[0].weight,
+              fatPercent: logs[0].fatPercent,
+              muscleMass: logs[0].muscleMass
+            })
           }
         } catch {}
       }
@@ -200,25 +204,41 @@ export default function HomePage() {
           </Link>
 
           {/* Вес */}
-          <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))]">
+          <Link href="/weight" className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))] block hover:shadow-xl transition-all active:scale-98">
             <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4 flex items-center gap-2">
               <span className="text-xl">⚖️</span>
-              Вес
+              Вес и замеры
             </h3>
-            {weight ? (
-              <div className="text-center p-4 bg-purple-500/10 rounded-2xl">
-                <div className="text-4xl font-bold text-purple-500 mb-1">{weight}</div>
-                <div className="text-sm text-[hsl(var(--text-secondary))]">кг</div>
+            {weightData ? (
+              <div className="space-y-3">
+                <div className="text-center p-4 bg-purple-500/10 rounded-2xl">
+                  <div className="text-4xl font-bold text-purple-500 mb-1">{weightData.weight}</div>
+                  <div className="text-sm text-[hsl(var(--text-secondary))]">кг</div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {weightData.fatPercent && (
+                    <div className="text-center p-3 bg-orange-500/10 rounded-xl">
+                      <div className="text-lg font-bold text-orange-500">{weightData.fatPercent}%</div>
+                      <div className="text-xs text-[hsl(var(--text-secondary))]">жир</div>
+                    </div>
+                  )}
+                  {weightData.muscleMass && (
+                    <div className="text-center p-3 bg-blue-500/10 rounded-xl">
+                      <div className="text-lg font-bold text-blue-500">{weightData.muscleMass}</div>
+                      <div className="text-xs text-[hsl(var(--text-secondary))]">мышцы, кг</div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="text-center p-4 bg-[hsl(var(--muted))] rounded-2xl">
                 <div className="text-sm text-[hsl(var(--text-secondary))]">Вес ещё не записан</div>
-                <Link href="/weight" className={`text-sm ${themeConfig.colors.primaryText} hover:underline mt-2 inline-block`}>
+                <div className="text-sm text-[hsl(var(--primary))] hover:underline mt-2 inline-block">
                   Записать вес →
-                </Link>
+                </div>
               </div>
             )}
-          </div>
+          </Link>
         </div>
 
         {/* Настройки */}

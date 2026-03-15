@@ -19,6 +19,7 @@ type Message = {
 
 type DiaryData = { calories: number; protein: number; fat: number; carbs: number } | null
 type WaterData = { intake: number } | null
+type WeightDataType = { weight: number; fatPercent?: number; muscleMass?: number } | null
 
 // Проверка дубликатов: сравниваем названия продуктов
 function isDuplicate(newItemName: string, existingItems: Array<{name: string}>): boolean {
@@ -109,6 +110,7 @@ export default function ChatPage() {
   })
   const [diaryData, setDiaryData] = useState<DiaryData | null>(null)
   const [waterData, setWaterData] = useState<WaterData | null>(null)
+  const [weightData, setWeightData] = useState<WeightDataType>(null)
   const [pendingFoodEntry, setPendingFoodEntry] = useState<Message['foodEntry'] | null>(null)
   const [pendingWaterVolume, setPendingWaterVolume] = useState<number | null>(null)
   const [input, setInput] = useState('')
@@ -140,6 +142,21 @@ export default function ChatPage() {
           }
         } catch {}
       }
+      
+      // Вес
+      const weightSaved = localStorage.getItem('fitmate-weight')
+      if (weightSaved) {
+        try {
+          const logs = JSON.parse(weightSaved)
+          if (logs && logs.length > 0) {
+            setWeightData({
+              weight: logs[0].weight,
+              fatPercent: logs[0].fatPercent,
+              muscleMass: logs[0].muscleMass
+            })
+          }
+        } catch {}
+      }
     }
     
     loadData()
@@ -168,7 +185,8 @@ export default function ChatPage() {
       // Собираем полный контекст
       const diaryContext = diaryData ? `Съедено на ${diaryData.calories} ккал (Б: ${diaryData.protein}г, Ж: ${diaryData.fat}г, У: ${diaryData.carbs}г)` : ''
       const waterContext = waterData ? `Выпито воды: ${waterData.intake} мл` : ''
-      const healthContext = [diaryContext, waterContext].filter(Boolean).join('. ')
+      const weightContext = weightData ? `Вес: ${weightData.weight} кг${weightData.fatPercent ? `, жир: ${weightData.fatPercent}%` : ''}${weightData.muscleMass ? `, мышцы: ${weightData.muscleMass}кг` : ''}` : ''
+      const healthContext = [diaryContext, waterContext, weightContext].filter(Boolean).join('. ')
       
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
