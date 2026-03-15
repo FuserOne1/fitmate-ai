@@ -3,6 +3,20 @@ import { chatWithAI } from '@/lib/ai/openrouter'
 
 // POST /api/ai/parse-food
 export async function POST(request: NextRequest) {
+  // Проверка переменной окружения
+  const apiKey = process.env.OPENROUTER_API_KEY
+  
+  if (!apiKey) {
+    console.error('❌ OPENROUTER_API_KEY не найден!')
+    return NextResponse.json(
+      { 
+        error: 'Server configuration error',
+        message: 'OPENROUTER_API_KEY is missing'
+      },
+      { status: 500 }
+    )
+  }
+
   try {
     const body = await request.json()
     const { text } = body
@@ -74,3 +88,5 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+export const runtime = 'nodejs'
