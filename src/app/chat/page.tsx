@@ -59,8 +59,20 @@ function parseFoodEntry(content: string) {
   try { return JSON.parse(match[1].trim()) } catch { return null }
 }
 
+function parseWaterEntry(content: string) {
+  const match = content.match(/\[WATER_ENTRY\]([\s\S]*?)\[\/WATER_ENTRY\]/)
+  if (!match) return null
+  try { 
+    const parsed = JSON.parse(match[1].trim())
+    return { volume: parsed.volume || 0 }
+  } catch { return null }
+}
+
 function cleanContent(content: string) {
-  return content.replace(/\[FOOD_ENTRY\][\s\S]*?\[\/FOOD_ENTRY\]/g, '').trim()
+  return content
+    .replace(/\[FOOD_ENTRY\][\s\S]*?\[\/FOOD_ENTRY\]/g, '')
+    .replace(/\[WATER_ENTRY\][\s\S]*?\[\/WATER_ENTRY\]/g, '')
+    .trim()
 }
 
 async function compressImage(file: File): Promise<string> {
@@ -96,6 +108,7 @@ export default function ChatPage() {
   const [diaryData, setDiaryData] = useState<DiaryData | null>(null)
   const [waterData, setWaterData] = useState<WaterData | null>(null)
   const [pendingFoodEntry, setPendingFoodEntry] = useState<Message['foodEntry'] | null>(null)
+  const [pendingWaterVolume, setPendingWaterVolume] = useState<number | null>(null)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [analyzingImage, setAnalyzingImage] = useState(false)
@@ -166,14 +179,24 @@ export default function ChatPage() {
       const data = await response.json()
       if (response.ok && data.data) {
         const foodEntry = parseFoodEntry(data.data)
-        
-        // Проверяем дубликаты ТОЛЬКО если в сообщении есть FOOD_ENTRY
-        if (foodEntry) {
+        const waterEntry = parseWaterEntry(data.data)
+
+        // Сначала проверяем WATER_ENTRY (вода)
+        if (waterEntry && waterEntry.volume > 0) {
+          setPendingWaterVolume(waterEntry.volume)
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `${cleanContent(data.data)}\n\n💧 Записать ${waterEntry.volume} мл воды?`, 
+            timestamp: Date.now() 
+          }])
+        }
+        // Потом проверяем FOOD_ENTRY (еда)
+        else if (foodEntry) {
           // Получаем реально записанные продукты из localStorage
           const saved = localStorage.getItem('fitmate-diary')
           const today = new Date().toISOString().split('T')[0]
           let todayItems: Array<{name: string}> = []
-          
+
           if (saved) {
             try {
               const logs = JSON.parse(saved)
@@ -183,21 +206,21 @@ export default function ChatPage() {
               }
             } catch {}
           }
-          
+
           // Фильтруем только новые продукты
           const newItems = foodEntry.items.filter((item: {name: string}) => !isDuplicate(item.name, todayItems))
-          
+
           if (newItems.length === 0) {
             // Все продукты уже записаны сегодня - показываем оригинальный ответ AI + инфо
-            setMessages(prev => [...prev, { 
-              role: 'assistant', 
-              content: `${cleanContent(data.data)}\n\n💡 Но это уже записано в дневнике сегодня!`, 
-              timestamp: Date.now() 
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `${cleanContent(data.data)}\n\n💡 Но это уже записано в дневнике сегодня!`,
+              timestamp: Date.now()
             }])
           } else if (newItems.length < foodEntry.items.length) {
             // Часть продуктов уже записана
-            const partialEntry = { 
-              ...foodEntry, 
+            const partialEntry = {
+              ...foodEntry,
               items: newItems,
               total: {
                 calories: newItems.reduce((sum: number, i: {calories: number}) => sum + i.calories, 0),
@@ -206,11 +229,11 @@ export default function ChatPage() {
                 carbs: newItems.reduce((sum: number, i: {carbs: number}) => sum + i.carbs, 0)
               }
             }
-            setMessages(prev => [...prev, { 
-              role: 'assistant', 
+            setMessages(prev => [...prev, {
+              role: 'assistant',
               content: `${cleanContent(data.data)}\n\n⚠️ Часть продуктов уже записана, добавлю только новое:`,
-              timestamp: Date.now(), 
-              foodEntry: partialEntry 
+              timestamp: Date.now(),
+              foodEntry: partialEntry
             }])
             setPendingFoodEntry(partialEntry)
           } else {
@@ -219,7 +242,7 @@ export default function ChatPage() {
             setPendingFoodEntry(foodEntry)
           }
         } else {
-          // Нет FOOD_ENTRY - просто показываем ответ
+          // Нет FOOD_ENTRY или WATER_ENTRY - просто показываем ответ
           setMessages(prev => [...prev, { role: 'assistant', content: cleanContent(data.data), timestamp: Date.now() }])
         }
       } else {
@@ -380,6 +403,26 @@ export default function ChatPage() {
     alert('✅ Добавлено!')
   }
 
+  function addWaterToDiary() {
+    if (!pendingWaterVolume) return
+    const saved = localStorage.getItem('fitmate-water')
+    let logs = saved ? JSON.parse(saved) : []
+    const today = new Date().toISOString().split('T')[0]
+    const todayIndex = logs.findIndex((log: any) => log.date === today)
+    
+    if (todayIndex >= 0) {
+      logs[todayIndex].intake += pendingWaterVolume
+    } else {
+      logs.unshift({ date: today, intake: pendingWaterVolume })
+    }
+    
+    localStorage.setItem('fitmate-water', JSON.stringify(logs))
+    setPendingWaterVolume(null)
+    setWaterData({ intake: logs[0].intake })
+    window.dispatchEvent(new Event('storage'))
+    alert(`💧 Добавлено ${pendingWaterVolume} мл воды!`)
+  }
+
   function clearChat() {
     if (confirm('Очистить историю?')) setMessages([{ role: 'assistant', content: 'Привет! Чем помочь?', timestamp: Date.now() }])
   }
@@ -399,6 +442,28 @@ export default function ChatPage() {
       </header>
 
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col overflow-hidden">
+        {/* Вода - подтверждение */}
+        {pendingWaterVolume !== null && (
+          <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-lg border border-[hsl(var(--border))] mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Droplets className="w-5 h-5 text-blue-500" />
+              <h3 className="font-bold text-[hsl(var(--text-primary))]">Записать воду?</h3>
+            </div>
+            <div className="mb-4 text-center">
+              <p className="text-3xl font-bold text-blue-500">{pendingWaterVolume} мл</p>
+              <p className="text-sm text-[hsl(var(--text-secondary))]">💧 Чистой воды</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setPendingWaterVolume(null)} className="flex-1 py-2 bg-[hsl(var(--muted))] rounded-lg text-sm">Отмена</button>
+              <button onClick={addWaterToDiary} className="flex-1 py-2 bg-blue-500 text-white rounded-lg text-sm flex items-center justify-center gap-2">
+                <Droplets className="w-4 h-4" />
+                Добавить
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Еда - подтверждение */}
         {pendingFoodEntry && (
           <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-lg border border-[hsl(var(--border))] mb-4">
             <div className="flex items-center gap-2 mb-3"><Utensils className="w-5 h-5 text-[hsl(var(--primary))]" /><h3 className="font-bold text-[hsl(var(--text-primary))]">Записать в дневник?</h3></div>
