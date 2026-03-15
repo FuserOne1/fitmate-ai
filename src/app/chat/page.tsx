@@ -144,6 +144,7 @@ export default function ChatPage() {
   async function sendMessage() {
     if (!input.trim() || loading) return
     const userMessage: Message = { role: 'user', content: input.trim(), timestamp: Date.now() }
+    const currentMessages = [...messages, userMessage]
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setLoading(true)
@@ -158,7 +159,7 @@ export default function ChatPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })), 
+          messages: currentMessages.map(m => ({ role: m.role, content: m.content })), 
           diaryContext: healthContext 
         }),
       })
@@ -166,7 +167,7 @@ export default function ChatPage() {
       if (response.ok && data.data) {
         const foodEntry = parseFoodEntry(data.data)
         
-        // Проверяем дубликаты с тем, что УЖЕ записано в дневник сегодня
+        // Проверяем дубликаты ТОЛЬКО если в сообщении есть FOOD_ENTRY
         if (foodEntry) {
           // Получаем реально записанные продукты из localStorage
           const saved = localStorage.getItem('fitmate-diary')
@@ -187,16 +188,16 @@ export default function ChatPage() {
           const newItems = foodEntry.items.filter((item: {name: string}) => !isDuplicate(item.name, todayItems))
           
           if (newItems.length === 0) {
-            // Все продукты уже записаны сегодня
+            // Все продукты уже записаны сегодня - показываем оригинальный ответ AI + инфо
             setMessages(prev => [...prev, { 
               role: 'assistant', 
-              content: '✅ Это уже записано в дневнике сегодня! 💕', 
+              content: `${cleanContent(data.data)}\n\n💡 Но это уже записано в дневнике сегодня!`, 
               timestamp: Date.now() 
             }])
           } else if (newItems.length < foodEntry.items.length) {
             // Часть продуктов уже записана
-            const partialEntry = {
-              ...foodEntry,
+            const partialEntry = { 
+              ...foodEntry, 
               items: newItems,
               total: {
                 calories: newItems.reduce((sum: number, i: {calories: number}) => sum + i.calories, 0),
@@ -207,7 +208,7 @@ export default function ChatPage() {
             }
             setMessages(prev => [...prev, { 
               role: 'assistant', 
-              content: `⚠️ Часть продуктов уже записана. Добавлю только новое:`,
+              content: `${cleanContent(data.data)}\n\n⚠️ Часть продуктов уже записана, добавлю только новое:`,
               timestamp: Date.now(), 
               foodEntry: partialEntry 
             }])
@@ -218,6 +219,7 @@ export default function ChatPage() {
             setPendingFoodEntry(foodEntry)
           }
         } else {
+          // Нет FOOD_ENTRY - просто показываем ответ
           setMessages(prev => [...prev, { role: 'assistant', content: cleanContent(data.data), timestamp: Date.now() }])
         }
       } else {
