@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 340 100% 98%;
+    --foreground: 340 5% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 340 5% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 340 5% 10%;
+    --primary: 350 85% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 340 20% 95%;
+    --secondary-foreground: 340 5% 10%;
+    --muted: 340 10% 95%;
+    --muted-foreground: 340 5% 45%;
+    --accent: 350 85% 95%;
+    --accent-foreground: 350 85% 40%;
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 340 20% 90%;
+    --input: 340 20% 90%;
+    --ring: 350 85% 60%;
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 340 10% 5%;
+    --foreground: 340 5% 95%;
+    --card: 340 10% 8%;
+    --card-foreground: 340 5% 95%;
+    --popover: 340 10% 8%;
+    --popover-foreground: 340 5% 95%;
+    --primary: 350 85% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 340 10% 15%;
+    --secondary-foreground: 340 5% 95%;
+    --muted: 340 10% 15%;
+    --muted-foreground: 340 5% 65%;
+    --accent: 350 85% 20%;
+    --accent-foreground: 350 85% 70%;
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 340 10% 20%;
+    --input: 340 10% 20%;
+    --ring: 350 85% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* PWA стили */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Safe area для мобильных */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
