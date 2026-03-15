@@ -184,7 +184,7 @@ export default function ChatPage() {
           }
           
           // Фильтруем только новые продукты
-          const newItems = foodEntry.items.filter(item => !isDuplicate(item.name, todayItems))
+          const newItems = foodEntry.items.filter((item: {name: string}) => !isDuplicate(item.name, todayItems))
           
           if (newItems.length === 0) {
             // Все продукты уже записаны сегодня
@@ -295,7 +295,7 @@ export default function ChatPage() {
           }
           
           // Фильтруем только новые продукты
-          const newItems = foodEntry.items.filter(item => !isDuplicate(item.name, todayItems))
+          const newItems = foodEntry.items.filter((item: {name: string}) => !isDuplicate(item.name, todayItems))
           
           if (newItems.length === 0) {
             // Все продукты уже записаны сегодня
