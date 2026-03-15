@@ -74,19 +74,19 @@ export default function WaterWidget({ onAddWater }: WaterWidgetProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="relative w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-lg flex items-center justify-center hover:scale-105 transition-transform border-2 border-blue-400/30"
       >
-        <svg className="absolute w-full h-full transform -rotate-90 p-1">
+        <svg className="absolute w-full h-full transform -rotate-90 p-1.5">
           <circle
-            cx="28"
-            cy="28"
-            r="20"
+            cx="26"
+            cy="26"
+            r="18"
             stroke="rgba(255,255,255,0.3)"
             strokeWidth="4"
             fill="none"
           />
           <circle
-            cx="28"
-            cy="28"
-            r="20"
+            cx="26"
+            cy="26"
+            r="18"
             stroke="white"
             strokeWidth="4"
             fill="none"
@@ -98,8 +98,8 @@ export default function WaterWidget({ onAddWater }: WaterWidgetProps) {
         </svg>
         <Droplets className="w-6 h-6 text-white relative z-10" />
         {intake > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-blue-600 text-xs font-bold rounded-full flex items-center justify-center">
-            {intake >= 1000 ? `${(intake / 1000).toFixed(1)}L` : intake}
+          <span className="absolute -top-1 -right-1 w-6 h-6 bg-white text-blue-600 text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
+            {intake >= 1000 ? `${(intake / 1000).toFixed(1)}` : intake}
           </span>
         )}
       </button>
@@ -108,7 +108,7 @@ export default function WaterWidget({ onAddWater }: WaterWidgetProps) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-16 z-50 w-72 bg-[hsl(var(--card))] rounded-3xl shadow-2xl border border-[hsl(var(--border))] overflow-hidden animate-fade-in">
+          <div className="fixed right-4 top-16 z-50 w-72 bg-[hsl(var(--card))] rounded-3xl shadow-2xl border border-[hsl(var(--border))] overflow-hidden animate-fade-in max-h-[80vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-4">
               <div className="flex items-center justify-between">

@@ -411,18 +411,25 @@ export default function ChatPage() {
     let logs = saved ? JSON.parse(saved) : []
     const today = new Date().toISOString().split('T')[0]
     const todayIndex = logs.findIndex((log: any) => log.date === today)
-    
+
     if (todayIndex >= 0) {
       logs[todayIndex].intake += pendingWaterVolume
     } else {
       logs.unshift({ date: today, intake: pendingWaterVolume })
     }
-    
+
     localStorage.setItem('fitmate-water', JSON.stringify(logs))
+    const newIntake = logs[0].intake
     setPendingWaterVolume(null)
-    setWaterData({ intake: logs[0].intake })
+    setWaterData({ intake: newIntake })
     window.dispatchEvent(new Event('storage'))
-    alert(`💧 Добавлено ${pendingWaterVolume} мл воды!`)
+    
+    // Добавляем сообщение в чат
+    setMessages(prev => [...prev, {
+      role: 'assistant',
+      content: `💧 Записала ${pendingWaterVolume} мл воды! Теперь за сегодня: ${newIntake} мл`,
+      timestamp: Date.now()
+    }])
   }
 
   function clearChat() {
@@ -491,44 +498,6 @@ export default function ChatPage() {
                 </button>
               </div>
             </div>
-          </div>
-        )}
-
-        {diaryData && diaryData.calories > 0 && (
-          <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-md border border-[hsl(var(--border))] mb-4">
-            <div className="flex items-center gap-2 mb-2"><Utensils className="w-4 h-4 text-[hsl(var(--primary))]" /><p className="text-sm font-medium">Сегодня съедено:</p></div>
-            <div className="grid grid-cols-4 gap-2 text-center">
-              <div><p className="text-lg font-bold text-[hsl(var(--primary))]">{diaryData.calories}</p><p className="text-xs">ккал</p></div>
-              <div><p className="text-lg font-bold text-blue-500">{diaryData.protein}</p><p className="text-xs">белки</p></div>
-              <div><p className="text-lg font-bold text-yellow-500">{diaryData.fat}</p><p className="text-xs">жиры</p></div>
-              <div><p className="text-lg font-bold text-green-500">{diaryData.carbs}</p><p className="text-xs">углеводы</p></div>
-            </div>
-          </div>
-        )}
-
-        {waterData && waterData.intake > 0 && (
-          <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-md border border-[hsl(var(--border))] mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Droplets className="w-4 h-4 text-blue-500" />
-                <p className="text-sm font-medium">Вода за сегодня:</p>
-              </div>
-              <Link href="/water" className="text-xs text-blue-500 hover:underline">Изменить →</Link>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <div className="h-3 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-500"
-                    style={{ width: `${Math.min(100, (waterData.intake / 2000) * 100)}%` }}
-                  />
-                </div>
-              </div>
-              <p className="text-lg font-bold text-blue-500 min-w-[80px] text-right">{waterData.intake} мл</p>
-            </div>
-            <p className="text-xs text-[hsl(var(--text-secondary))] mt-2 text-center">
-              {waterData.intake >= 2000 ? '✅ Норма выполнена!' : `Осталось: ${2000 - waterData.intake} мл`}
-            </p>
           </div>
         )}
 

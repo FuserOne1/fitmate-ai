@@ -59,9 +59,31 @@ export default function CaloriesWidget() {
         onClick={() => setIsOpen(!isOpen)}
         className="relative w-14 h-14 bg-gradient-to-br from-[hsl(var(--primary))] to-pink-500 rounded-2xl shadow-lg flex items-center justify-center hover:scale-105 transition-transform border-2 border-[hsl(var(--primary))]/30"
       >
+        <svg className="absolute w-full h-full transform -rotate-90 p-1.5">
+          <circle
+            cx="26"
+            cy="26"
+            r="18"
+            stroke="rgba(255,255,255,0.3)"
+            strokeWidth="4"
+            fill="none"
+          />
+          <circle
+            cx="26"
+            cy="26"
+            r="18"
+            stroke="white"
+            strokeWidth="4"
+            fill="none"
+            strokeDasharray={2 * Math.PI * 18}
+            strokeDashoffset={2 * Math.PI * 18 * (1 - progress.calories / 100)}
+            strokeLinecap="round"
+            className="transition-all duration-500"
+          />
+        </svg>
         <Utensils className="w-6 h-6 text-white" />
         {diaryData.calories > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-[hsl(var(--primary))] text-xs font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-6 h-6 bg-white text-[hsl(var(--primary))] text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
             {diaryData.calories}
           </span>
         )}
@@ -71,7 +93,7 @@ export default function CaloriesWidget() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 top-16 z-50 w-80 bg-[hsl(var(--card))] rounded-3xl shadow-2xl border border-[hsl(var(--border))] overflow-hidden animate-fade-in">
+          <div className="fixed right-4 top-16 z-50 w-80 bg-[hsl(var(--card))] rounded-3xl shadow-2xl border border-[hsl(var(--border))] overflow-hidden animate-fade-in max-h-[80vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-gradient-to-r from-[hsl(var(--primary))] to-pink-500 p-4">
               <div className="flex items-center justify-between">
