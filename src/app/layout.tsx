@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   description: 'AI-помощник для похудения с анализом еды по фото, трекингом воды и умными рекомендациями',
   manifest: '/manifest.json',
   icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
     apple: [
       { url: '/icons/apple-touch-icon.png', sizes: '180x180' },
     ],
