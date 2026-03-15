@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Trash2, Database, MessageSquare, Utensils } from 'lucide-react'
+import { ArrowLeft, Trash2, Database, MessageSquare, Utensils, Scale, Droplets } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 
 export default function DataPage() {
@@ -13,31 +13,37 @@ export default function DataPage() {
       return {
         chat: localStorage.getItem('fitmate-chat') ? 'Есть данные' : 'Пусто',
         diary: localStorage.getItem('fitmate-diary') ? 'Есть данные' : 'Пусто',
+        water: localStorage.getItem('fitmate-water') ? 'Есть данные' : 'Пусто',
+        weight: localStorage.getItem('fitmate-weight') ? 'Есть данные' : 'Пусто',
         theme: localStorage.getItem('fitmate-theme') || 'rose',
       }
     }
-    return { chat: '...', diary: '...', theme: '...' }
+    return { chat: '...', diary: '...', water: '...', weight: '...', theme: '...' }
   })
 
   function clearLocalStorage() {
-    if (!confirm('Вы уверены? Это удалит ВСЕ данные:\n\n• История чата\n• Записи дневника\n• Настройки темы\n\nЭто действие необратимо!')) {
+    if (!confirm('Вы уверены? Это удалит ВСЕ данные:\n\n• История чата\n• Записи дневника\n• Трекер воды\n• Замеры веса\n• Настройки темы\n\nЭто действие необратимо!')) {
       return
     }
 
     setClearing(true)
-    
+
     // Очищаем всё
     localStorage.removeItem('fitmate-chat')
     localStorage.removeItem('fitmate-diary')
+    localStorage.removeItem('fitmate-water')
+    localStorage.removeItem('fitmate-weight')
     localStorage.removeItem('fitmate-theme')
-    
+
     // Обновляем статистику
     setStats({
       chat: 'Пусто',
       diary: 'Пусто',
+      water: 'Пусто',
+      weight: 'Пусто',
       theme: 'rose',
     })
-    
+
     setClearing(false)
     alert('Все данные очищены! 🧹')
   }
@@ -54,6 +60,20 @@ export default function DataPage() {
     localStorage.removeItem('fitmate-diary')
     setStats(prev => ({ ...prev, diary: 'Пусто' }))
     alert('Дневник питания очищен! 🍽️')
+  }
+
+  function clearWaterOnly() {
+    if (!confirm('Очистить только трекер воды?')) return
+    localStorage.removeItem('fitmate-water')
+    setStats(prev => ({ ...prev, water: 'Пусто' }))
+    alert('Трекер воды очищен! 💧')
+  }
+
+  function clearWeightOnly() {
+    if (!confirm('Очистить только замеры веса?')) return
+    localStorage.removeItem('fitmate-weight')
+    setStats(prev => ({ ...prev, weight: 'Пусто' }))
+    alert('Замеры веса очищены! ⚖️')
   }
 
   return (
@@ -95,6 +115,24 @@ export default function DataPage() {
             </div>
             <div className="flex justify-between items-center p-3 bg-[hsl(var(--muted))] rounded-xl">
               <div className="flex items-center gap-3">
+                <Droplets className="w-5 h-5 text-blue-500" />
+                <span className="text-[hsl(var(--text-primary))]">Трекер воды</span>
+              </div>
+              <span className={`text-sm font-medium ${
+                stats.water === 'Пусто' ? 'text-green-500' : 'text-yellow-500'
+              }`}>{stats.water}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <div className="flex items-center gap-3">
+                <Scale className="w-5 h-5 text-purple-500" />
+                <span className="text-[hsl(var(--text-primary))]">Замеры веса</span>
+              </div>
+              <span className={`text-sm font-medium ${
+                stats.weight === 'Пусто' ? 'text-green-500' : 'text-yellow-500'
+              }`}>{stats.weight}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <div className="flex items-center gap-3">
                 <span className="text-xl">🎨</span>
                 <span className="text-[hsl(var(--text-primary))]">Тема</span>
               </div>
@@ -126,20 +164,34 @@ export default function DataPage() {
           <h2 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4">
             🗑️ Выборочная очистка
           </h2>
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={clearChatOnly}
-              className="w-full py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors flex items-center justify-center gap-2 font-medium"
+              className="py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors flex items-center justify-center gap-2 font-medium"
             >
-              <MessageSquare className="w-5 h-5" />
-              Очистить историю чата
+              <MessageSquare className="w-4 h-4" />
+              Чат
             </button>
             <button
               onClick={clearDiaryOnly}
-              className="w-full py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors flex items-center justify-center gap-2 font-medium"
+              className="py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors flex items-center justify-center gap-2 font-medium"
             >
-              <Utensils className="w-5 h-5" />
-              Очистить дневник питания
+              <Utensils className="w-4 h-4" />
+              Дневник
+            </button>
+            <button
+              onClick={clearWaterOnly}
+              className="py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors flex items-center justify-center gap-2 font-medium"
+            >
+              <Droplets className="w-4 h-4" />
+              Вода
+            </button>
+            <button
+              onClick={clearWeightOnly}
+              className="py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors flex items-center justify-center gap-2 font-medium"
+            >
+              <Scale className="w-4 h-4" />
+              Вес
             </button>
           </div>
         </div>
