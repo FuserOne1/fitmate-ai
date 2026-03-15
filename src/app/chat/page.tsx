@@ -465,7 +465,7 @@ export default function ChatPage() {
             <div className="flex items-center gap-2"><Sparkles className="w-6 h-6 text-[hsl(var(--primary))]" /><h1 className="text-xl font-bold text-[hsl(var(--text-primary))]">AI Помощник</h1></div>
           </div>
           <div className="flex items-center gap-2">
-            <WaterWidget onAddWater={(volume) => setPendingWaterVolume(volume)} />
+            <WaterWidget />
             <CaloriesWidget />
             <button onClick={clearChat} className="p-2 text-xs text-[hsl(var(--text-secondary))] hover:text-red-500">Очистить</button>
           </div>

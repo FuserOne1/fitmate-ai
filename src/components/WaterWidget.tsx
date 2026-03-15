@@ -3,11 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Droplets, Plus, Minus, X } from 'lucide-react'
 
-type WaterWidgetProps = {
-  onAddWater: (volume: number) => void
-}
+type WaterWidgetProps = {}
 
-export default function WaterWidget({ onAddWater }: WaterWidgetProps) {
+export default function WaterWidget({}: WaterWidgetProps) {
   const [intake, setIntake] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
 
@@ -44,24 +42,26 @@ export default function WaterWidget({ onAddWater }: WaterWidgetProps) {
   }, [])
 
   const handleQuickAdd = (volume: number) => {
-    onAddWater(volume)
     const newIntake = intake + volume
     setIntake(newIntake)
-    
-    // Сохраняем в localStorage
+
+    // Сохраняем в localStorage напрямую
     const saved = localStorage.getItem('fitmate-water')
     let logs = saved ? JSON.parse(saved) : []
     const today = new Date().toISOString().split('T')[0]
     const todayIndex = logs.findIndex((log: any) => log.date === today)
-    
+
     if (todayIndex >= 0) {
       logs[todayIndex].intake = newIntake
     } else {
       logs.unshift({ date: today, intake: newIntake })
     }
-    
+
     localStorage.setItem('fitmate-water', JSON.stringify(logs))
     window.dispatchEvent(new Event('storage'))
+    
+    // Закрываем меню
+    setIsOpen(false)
   }
 
   const progressPercent = Math.min(100, (intake / 2000) * 100)
