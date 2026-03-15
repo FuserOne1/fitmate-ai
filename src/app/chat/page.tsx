@@ -18,6 +18,22 @@ type Message = {
 type DiaryData = { calories: number; protein: number; fat: number; carbs: number } | null
 type WaterData = { intake: number } | null
 
+// Хук для получения сегодняшних продуктов из дневника
+function getTodayFoodItems(): string[] {
+  if (typeof window === 'undefined') return []
+  const saved = localStorage.getItem('fitmate-diary')
+  if (!saved) return []
+  try {
+    const logs = JSON.parse(saved)
+    const today = new Date().toISOString().split('T')[0]
+    const todayLog = logs.find((log: any) => log.date === today)
+    if (!todayLog || !todayLog.items) return []
+    return todayLog.items.map((item: any) => item.name.toLowerCase())
+  } catch {
+    return []
+  }
+}
+
 function renderMarkdown(text: string) {
   if (!text) return null
   
@@ -137,17 +153,50 @@ export default function ChatPage() {
     setLoading(true)
 
     try {
-      const diaryContext = diaryData ? `Сегодня Маша уже съела на ${diaryData.calories} ккал` : ''
+      // Собираем полный контекст
+      const diaryContext = diaryData ? `Съедено на ${diaryData.calories} ккал (Б: ${diaryData.protein}г, Ж: ${diaryData.fat}г, У: ${diaryData.carbs}г)` : ''
+      const waterContext = waterData ? `Выпито воды: ${waterData.intake} мл` : ''
+      const healthContext = [diaryContext, waterContext].filter(Boolean).join('. ')
+      
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })), diaryContext }),
+        body: JSON.stringify({ 
+          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })), 
+          diaryContext: healthContext 
+        }),
       })
       const data = await response.json()
       if (response.ok && data.data) {
         const foodEntry = parseFoodEntry(data.data)
-        setMessages(prev => [...prev, { role: 'assistant', content: cleanContent(data.data), timestamp: Date.now(), foodEntry: foodEntry || undefined }])
-        if (foodEntry) setPendingFoodEntry(foodEntry)
+        
+        // Проверяем дубликаты
+        if (foodEntry) {
+          const todayItems = getTodayFoodItems()
+          const newItems = foodEntry.items.filter(item => 
+            !todayItems.some(todayItem => todayItem.includes(item.name.toLowerCase()) || item.name.toLowerCase().includes(todayItem))
+          )
+          
+          if (newItems.length === 0) {
+            // Все продукты уже записаны сегодня
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: '✅ Это уже записано в дневнике сегодня! 💕', 
+              timestamp: Date.now() 
+            }])
+          } else if (newItems.length < foodEntry.items.length) {
+            // Часть продуктов уже записана
+            const partialEntry = { ...foodEntry, items: newItems }
+            setMessages(prev => [...prev, { role: 'assistant', content: cleanContent(data.data), timestamp: Date.now(), foodEntry: partialEntry }])
+            setPendingFoodEntry(partialEntry)
+          } else {
+            // Все продукты новые
+            setMessages(prev => [...prev, { role: 'assistant', content: cleanContent(data.data), timestamp: Date.now(), foodEntry }])
+            setPendingFoodEntry(foodEntry)
+          }
+        } else {
+          setMessages(prev => [...prev, { role: 'assistant', content: cleanContent(data.data), timestamp: Date.now() }])
+        }
       } else {
         setMessages(prev => [...prev, { role: 'assistant', content: `Ошибка: ${data.error}`, timestamp: Date.now() }])
       }
