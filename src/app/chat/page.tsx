@@ -186,7 +186,13 @@ export default function ChatPage() {
       const diaryContext = diaryData ? `Съедено на ${diaryData.calories} ккал (Б: ${diaryData.protein}г, Ж: ${diaryData.fat}г, У: ${diaryData.carbs}г)` : ''
       const waterContext = waterData ? `Выпито воды: ${waterData.intake} мл` : ''
       const weightContext = weightData ? `Вес: ${weightData.weight} кг${weightData.fatPercent ? `, жир: ${weightData.fatPercent}%` : ''}${weightData.muscleMass ? `, мышцы: ${weightData.muscleMass}кг` : ''}` : ''
-      const healthContext = [diaryContext, waterContext, weightContext].filter(Boolean).join('. ')
+      
+      // Загружаем цели
+      const goalsSaved = typeof window !== 'undefined' ? localStorage.getItem('fitmate-goals') : null
+      const goals = goalsSaved ? JSON.parse(goalsSaved) : { calories: 2000 }
+      const goalsContext = `Норма калорий: ${goals.calories} ккал`
+      
+      const healthContext = [diaryContext, waterContext, weightContext, goalsContext].filter(Boolean).join('. ')
       
       const response = await fetch('/api/ai/chat', {
         method: 'POST',

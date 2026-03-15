@@ -85,8 +85,30 @@ export async function POST(request: NextRequest) {
 
     // Добавляем контекст о съеденном и воде если есть
     const contextMessage = diaryContext
-      ? `\n\n[КОНТЕКСТ СЕГОДНЯШНЕГО ДНЯ: ${diaryContext}]`
+      ? `\n\n[КОНТЕКСТ СЕГОДНЯШНЕГО ДНЯ: ${diaryContext}]\n\nВАЖНО: Если Маша превысила калории, мягко намекни что стоит притормозить. Похвали за успехи и поддержи!`
       : ''
+
+    // Проверяем превышение калорий
+    let calorieWarning = ''
+    if (diaryContext) {
+      // Извлекаем норму из контекста
+      const normMatch = diaryContext.match(/Норма калорий: (\d+) ккал/)
+      const calorieMatch = diaryContext.match(/Съедено на (\d+) ккал/)
+      
+      if (normMatch && calorieMatch) {
+        const calorieGoal = parseInt(normMatch[1])
+        const consumedCalories = parseInt(calorieMatch[1])
+        
+        if (consumedCalories > calorieGoal) {
+          const over = consumedCalories - calorieGoal
+          const overPercent = Math.round((over / calorieGoal) * 100)
+          calorieWarning = `\n\n⚠️ Маша уже превысила норму на ${over} ккал (${overPercent}%)! Будь мягче, поддержи, но намекни что можно остановиться. Предложи легкий перекус или воду.`
+        } else if (consumedCalories > calorieGoal * 0.9) {
+          const remaining = calorieGoal - consumedCalories
+          calorieWarning = `\n\nМаша почти достигла нормы (осталось ${remaining} ккал). Похвали и напомни быть внимательной к порциям.`
+        }
+      }
+    }
 
     // Фильтруем только user/assistant сообщения, убираем системные
     const filteredMessages = messages
@@ -95,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     const result = await chatWithAI({
       messages: [
-        { role: 'system', content: systemPrompt + contextMessage },
+        { role: 'system', content: systemPrompt + contextMessage + calorieWarning },
         ...filteredMessages,
       ],
     })
