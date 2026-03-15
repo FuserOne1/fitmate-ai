@@ -26,30 +26,74 @@ type DailyLog = {
 
 // Получение текущей даты в формате YYYY-MM-DD по МСК
 function getMoscowDate(): string {
-  const now = new Date()
-  const moscowTime = new Date(now.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))
-  return moscowTime.toISOString().split('T')[0]
+  try {
+    const now = new Date()
+    const moscowTime = new Date(now.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))
+    return moscowTime.toISOString().split('T')[0]
+  } catch (e) {
+    console.error('getMoscowDate error:', e)
+    // Fallback: просто берём текущую дату
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+}
+
+// Конвертация даты в формат YYYY-MM-DD из разных форматов
+function parseDate(dateStr: string): string {
+  try {
+    // Если уже в формате YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return dateStr
+    }
+    
+    // Если в формате DD.MM.YYYY
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateStr)) {
+      const [day, month, year] = dateStr.split('.')
+      return `${year}-${month}-${day}`
+    }
+    
+    // Пытаемся распарсить как Date
+    const date = new Date(dateStr)
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0]
+    }
+    
+    return dateStr
+  } catch (e) {
+    console.error('parseDate error:', e, dateStr)
+    return dateStr
+  }
 }
 
 // Получение текущей даты для отображения
 function getDisplayDate(dateStr: string): string {
   try {
-    const date = new Date(dateStr + 'T00:00:00')
+    const normalizedDate = parseDate(dateStr)
+    const date = new Date(normalizedDate + 'T00:00:00')
+    
+    if (isNaN(date.getTime())) {
+      return dateStr
+    }
+    
     const today = new Date()
     const moscowToday = new Date(today.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))
     
-    if (dateStr === getMoscowDate()) {
+    if (normalizedDate === getMoscowDate()) {
       return 'Сегодня'
     }
     
     const yesterday = new Date(moscowToday)
     yesterday.setDate(yesterday.getDate() - 1)
-    if (dateStr === yesterday.toISOString().split('T')[0]) {
+    if (normalizedDate === yesterday.toISOString().split('T')[0]) {
       return 'Вчера'
     }
     
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
   } catch (e) {
+    console.error('getDisplayDate error:', e)
     return dateStr
   }
 }
@@ -81,16 +125,23 @@ export default function DiaryPage() {
         
         if (saved) {
           const parsedLogs = JSON.parse(saved)
-          console.log('Parsed logs:', parsedLogs)
+          console.log('Parsed logs before normalization:', parsedLogs)
+
+          // Нормализуем даты
+          const normalizedLogs = parsedLogs.map((log: DailyLog) => ({
+            ...log,
+            date: parseDate(log.date),
+          }))
+          console.log('Normalized logs:', normalizedLogs)
 
           // Проверяем, есть ли запись за сегодня
           const today = getMoscowDate()
           console.log('Today:', today)
-          const todayLog = parsedLogs.find((log: DailyLog) => log.date === today)
+          const todayLog = normalizedLogs.find((log: DailyLog) => log.date === today)
 
           if (!todayLog) {
             // Добавляем запись за сегодня
-            parsedLogs.unshift({
+            normalizedLogs.unshift({
               date: today,
               items: [],
               total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
@@ -98,7 +149,7 @@ export default function DiaryPage() {
           }
 
           // Фильтруем только корректные записи
-          const validLogs = parsedLogs.filter((log: DailyLog) => {
+          const validLogs = normalizedLogs.filter((log: DailyLog) => {
             const isValid = log.date && /^\d{4}-\d{2}-\d{2}$/.test(log.date)
             console.log('Log date:', log.date, 'valid:', isValid)
             return isValid
