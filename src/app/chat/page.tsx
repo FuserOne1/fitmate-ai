@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Send, Sparkles, Utensils, Trash2, Image, Droplets } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
+import WaterWidget from '@/components/WaterWidget'
+import CaloriesWidget from '@/components/CaloriesWidget'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -437,93 +439,56 @@ export default function ChatPage() {
             <Link href="/" className="p-2 hover:bg-[hsl(var(--muted))] rounded-xl"><ArrowLeft className="w-6 h-6 text-[hsl(var(--primary))]" /></Link>
             <div className="flex items-center gap-2"><Sparkles className="w-6 h-6 text-[hsl(var(--primary))]" /><h1 className="text-xl font-bold text-[hsl(var(--text-primary))]">AI Помощник</h1></div>
           </div>
-          <button onClick={clearChat} className="p-2 text-xs text-[hsl(var(--text-secondary))] hover:text-red-500">Очистить</button>
+          <div className="flex items-center gap-2">
+            <WaterWidget onAddWater={(volume) => setPendingWaterVolume(volume)} />
+            <CaloriesWidget />
+            <button onClick={clearChat} className="p-2 text-xs text-[hsl(var(--text-secondary))] hover:text-red-500">Очистить</button>
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col overflow-hidden mt-44">
-        {/* Вода - подтверждение (закреплено сверху) */}
+      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col overflow-hidden mt-20">
+        {/* Вода - подтверждение (компактное) */}
         {pendingWaterVolume !== null && (
-          <div className="fixed top-16 left-0 right-0 z-50 px-4 mb-4 pointer-events-none">
-            <div className="max-w-3xl mx-auto pointer-events-auto">
-              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl p-5 shadow-2xl border border-blue-400/30 animate-fade-in">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
-                      <Droplets className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-white text-lg">Записать воду?</h3>
-                      <p className="text-xs text-white/80">💧 Чистой воды</p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setPendingWaterVolume(null)}
-                    className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-colors"
-                  >
-                    <span className="text-white text-xl">×</span>
-                  </button>
-                </div>
-                <div className="bg-white/10 rounded-2xl p-4 mb-4">
-                  <p className="text-4xl font-bold text-white text-center">{pendingWaterVolume} <span className="text-lg font-medium">мл</span></p>
-                </div>
-                <button 
-                  onClick={addWaterToDiary}
-                  className="w-full bg-white text-blue-600 hover:bg-blue-50 rounded-2xl py-3 font-bold transition-colors flex items-center justify-center gap-2 shadow-lg"
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+            <div className="pointer-events-auto bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full px-6 py-3 shadow-2xl border border-blue-400/30 animate-fade-in flex items-center gap-4">
+              <span className="text-white font-bold">{pendingWaterVolume} мл 💧</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPendingWaterVolume(null)}
+                  className="text-white/80 hover:text-white text-sm"
                 >
-                  <Droplets className="w-5 h-5" />
-                  Добавить воду
+                  Отмена
+                </button>
+                <button
+                  onClick={addWaterToDiary}
+                  className="bg-white text-blue-600 px-4 py-1.5 rounded-full text-sm font-bold hover:bg-blue-50 transition-colors"
+                >
+                  Добавить
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Еда - подтверждение (закреплено сверху) */}
+        {/* Еда - подтверждение (компактное) */}
         {pendingFoodEntry && (
-          <div className="fixed top-16 left-0 right-0 z-50 px-4 mb-4 pointer-events-none">
-            <div className="max-w-3xl mx-auto pointer-events-auto">
-              <div className="bg-gradient-to-br from-[hsl(var(--primary))] to-pink-500 rounded-3xl p-5 shadow-2xl border border-[hsl(var(--primary))]/30 animate-fade-in">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
-                      <Utensils className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-white text-lg">Записать в дневник?</h3>
-                      <p className="text-xs text-white/80">🍽️ {pendingFoodEntry.items.length} прод.</p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setPendingFoodEntry(null)}
-                    className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-colors"
-                  >
-                    <span className="text-white text-xl">×</span>
-                  </button>
-                </div>
-                <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
-                  {pendingFoodEntry.items.map((item, i) => (
-                    <div key={i} className="flex justify-between items-center bg-white/10 rounded-xl p-3">
-                      <span className="text-white font-medium text-sm">{item.name}</span>
-                      <span className="text-white font-bold text-sm">{item.calories} ккал</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setPendingFoodEntry(null)}
-                    className="flex-1 bg-white/20 hover:bg-white/30 text-white rounded-2xl py-3 font-medium transition-colors"
-                  >
-                    Отмена
-                  </button>
-                  <button 
-                    onClick={addFoodToDiary}
-                    className="flex-1 bg-white text-[hsl(var(--primary))] hover:bg-white/90 rounded-2xl py-3 font-bold transition-colors flex items-center justify-center gap-2 shadow-lg"
-                  >
-                    <span className="text-xl">+</span>
-                    Добавить
-                  </button>
-                </div>
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+            <div className="pointer-events-auto bg-gradient-to-r from-[hsl(var(--primary))] to-pink-500 rounded-full px-6 py-3 shadow-2xl border border-[hsl(var(--primary))]/30 animate-fade-in flex items-center gap-4">
+              <span className="text-white font-bold">{pendingFoodEntry.items.length} прод. 🍽️</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPendingFoodEntry(null)}
+                  className="text-white/80 hover:text-white text-sm"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={addFoodToDiary}
+                  className="bg-white text-[hsl(var(--primary))] px-4 py-1.5 rounded-full text-sm font-bold hover:bg-white/90 transition-colors"
+                >
+                  Добавить
+                </button>
               </div>
             </div>
           </div>
