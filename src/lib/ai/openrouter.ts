@@ -122,7 +122,10 @@ export async function chatWithAI(params: {
   try {
     const completion = await openrouter.chat.completions.create({
       model,
-      messages,
+      messages: messages as Array<{
+        role: 'system' | 'user' | 'assistant'
+        content: string
+      }>,
       max_tokens: 1000,
     })
 
