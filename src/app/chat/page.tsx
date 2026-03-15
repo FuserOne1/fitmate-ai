@@ -415,7 +415,14 @@ export default function ChatPage() {
     if (!pendingFoodEntry) return
     const saved = localStorage.getItem('fitmate-diary')
     let logs = saved ? JSON.parse(saved) : []
-    const today = new Date().toISOString().split('T')[0]
+    
+    // Используем локальную дату Москвы, а не UTC
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const today = `${year}-${month}-${day}`
+    
     const todayIndex = logs.findIndex((log: any) => log.date === today)
     if (todayIndex >= 0) {
       logs[todayIndex].items = [...logs[todayIndex].items, ...pendingFoodEntry.items]
@@ -433,25 +440,30 @@ export default function ChatPage() {
     if (!pendingWaterVolume) return
     const saved = localStorage.getItem('fitmate-water')
     let logs = saved ? JSON.parse(saved) : []
-    const today = new Date().toISOString().split('T')[0]
+    
+    // Используем локальную дату Москвы
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = String(now.getMonth() + 1).padStart(2, '0')
+    const day = String(now.getDate()).padStart(2, '0')
+    const today = `${year}-${month}-${day}`
+    
     const todayIndex = logs.findIndex((log: any) => log.date === today)
-
     if (todayIndex >= 0) {
       logs[todayIndex].intake += pendingWaterVolume
     } else {
       logs.unshift({ date: today, intake: pendingWaterVolume })
     }
-
+    
     localStorage.setItem('fitmate-water', JSON.stringify(logs))
-    const newIntake = logs[0].intake
     setPendingWaterVolume(null)
-    setWaterData({ intake: newIntake })
+    setWaterData({ intake: logs[0].intake })
     window.dispatchEvent(new Event('storage'))
     
     // Добавляем сообщение в чат
     setMessages(prev => [...prev, {
       role: 'assistant',
-      content: `💧 Записала ${pendingWaterVolume} мл воды! Теперь за сегодня: ${newIntake} мл`,
+      content: `💧 Записала ${pendingWaterVolume} мл воды! Теперь за сегодня: ${logs[0].intake} мл`,
       timestamp: Date.now()
     }])
   }
@@ -505,18 +517,22 @@ export default function ChatPage() {
         {/* Еда - подтверждение (компактное) */}
         {pendingFoodEntry && (
           <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-            <div className="pointer-events-auto bg-gradient-to-r from-[hsl(var(--primary))] to-pink-500 rounded-full px-6 py-3 shadow-2xl border border-[hsl(var(--primary))]/30 animate-fade-in flex items-center gap-4">
-              <span className="text-white font-bold">{pendingFoodEntry.items.length} прод. 🍽️</span>
+            <div className="pointer-events-auto bg-gradient-to-r from-[hsl(var(--primary))] to-pink-500 rounded-full px-5 py-2.5 shadow-2xl border border-[hsl(var(--primary))]/30 animate-fade-in flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-white font-bold text-sm whitespace-nowrap">{pendingFoodEntry.items.length} прод.</span>
+                <span className="text-white text-sm">🍽️</span>
+              </div>
+              <div className="h-4 w-px bg-white/30"></div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPendingFoodEntry(null)}
-                  className="text-white/80 hover:text-white text-sm"
+                  className="text-white/80 hover:text-white text-xs px-2"
                 >
                   Отмена
                 </button>
                 <button
                   onClick={addFoodToDiary}
-                  className="bg-white text-[hsl(var(--primary))] px-4 py-1.5 rounded-full text-sm font-bold hover:bg-white/90 transition-colors"
+                  className="bg-white text-[hsl(var(--primary))] px-3 py-1 rounded-full text-xs font-bold hover:bg-white/90 transition-colors"
                 >
                   Добавить
                 </button>
