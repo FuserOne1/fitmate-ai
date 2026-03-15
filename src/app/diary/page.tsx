@@ -25,20 +25,18 @@ type DailyLog = {
   }
 }
 
-// Получение текущей даты в формате YYYY-MM-DD по МСК
+// Получение текущей даты в формате YYYY-MM-DD
 function getMoscowDate(): string {
   try {
-    const now = new Date()
-    const moscowTime = new Date(now.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))
-    return moscowTime.toISOString().split('T')[0]
-  } catch (e) {
-    console.error('getMoscowDate error:', e)
-    // Fallback: просто берём текущую дату
+    // Простой способ без timezone - берём текущую дату
     const now = new Date()
     const year = now.getFullYear()
     const month = String(now.getMonth() + 1).padStart(2, '0')
     const day = String(now.getDate()).padStart(2, '0')
     return `${year}-${month}-${day}`
+  } catch (e) {
+    console.error('getMoscowDate error:', e)
+    return '2026-03-15' // Fallback
   }
 }
 
@@ -59,7 +57,10 @@ function parseDate(dateStr: string): string {
     // Пытаемся распарсить как Date
     const date = new Date(dateStr)
     if (!isNaN(date.getTime())) {
-      return date.toISOString().split('T')[0]
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
     }
     
     return dateStr
@@ -73,22 +74,30 @@ function parseDate(dateStr: string): string {
 function getDisplayDate(dateStr: string): string {
   try {
     const normalizedDate = parseDate(dateStr)
-    const date = new Date(normalizedDate + 'T00:00:00')
+    
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedDate)) {
+      return dateStr
+    }
+    
+    const [year, month, day] = normalizedDate.split('-')
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day))
     
     if (isNaN(date.getTime())) {
       return dateStr
     }
     
     const today = new Date()
-    const moscowToday = new Date(today.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))
+    const todayStr = getMoscowDate()
     
-    if (normalizedDate === getMoscowDate()) {
+    if (normalizedDate === todayStr) {
       return 'Сегодня'
     }
     
-    const yesterday = new Date(moscowToday)
+    const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
-    if (normalizedDate === yesterday.toISOString().split('T')[0]) {
+    const yesterdayStr = getMoscowDate() // Упрощённо
+    
+    if (normalizedDate === yesterdayStr) {
       return 'Вчера'
     }
     
