@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { ThemeProvider } from '@/lib/theme'
+import ClientProviders from '@/components/client-providers'
 
 const inter = Inter({ subsets: ['cyrillic', 'latin'] })
 
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   )
