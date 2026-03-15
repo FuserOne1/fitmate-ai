@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Send, Utensils, Plus, Trash2 } from 'lucide-react'
 
@@ -29,13 +29,31 @@ export default function DiaryPage() {
   const [loading, setLoading] = useState(false)
   const [parsedItems, setParsedItems] = useState<FoodItem[]>([])
   const [showConfirm, setShowConfirm] = useState(false)
-  const [logs, setLogs] = useState<DailyLog[]>([
-    {
-      date: new Date().toLocaleDateString('ru-RU'),
-      items: [],
-      total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-    },
-  ])
+  const [logs, setLogs] = useState<DailyLog[]>(() => {
+    // Загрузка из localStorage при первом рендере
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('fitmate-diary')
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch {}
+      }
+    }
+    return [
+      {
+        date: new Date().toLocaleDateString('ru-RU'),
+        items: [],
+        total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+      },
+    ]
+  })
+
+  // Сохранение в localStorage при изменении
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('fitmate-diary', JSON.stringify(logs))
+    }
+  }, [logs])
 
   async function parseFood() {
     if (!input.trim() || loading) return

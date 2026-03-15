@@ -24,7 +24,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await chatWithAI({ messages })
+    const result = await chatWithAI({
+      messages: [
+        {
+          role: 'system',
+          content: `Ты - дружелюбный AI-помощник для похудения FitMate. 
+Ты разговариваешь с девушкой по имени Маша.
+Твоя задача: поддерживать, отвечать на вопросы о питании и тренировках, давать советы.
+Будь позитивным, мотивируй, используй эмодзи.
+Не давай медицинских рекомендаций.
+Отвечай на русском языке.`,
+        },
+        ...messages,
+      ],
+    })
 
     if (result.success) {
       return NextResponse.json({ data: result.data })
