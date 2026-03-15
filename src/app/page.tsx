@@ -178,16 +178,26 @@ export default function HomePage() {
           </div>
 
           {/* Вода */}
-          <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))]">
+          <Link href="/water" className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))] block hover:shadow-xl transition-all active:scale-98">
             <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4 flex items-center gap-2">
               <span className="text-xl">💧</span>
               Вода за сегодня
             </h3>
-            <div className="text-center p-4 bg-blue-500/10 rounded-2xl">
-              <div className="text-4xl font-bold text-blue-500 mb-1">{waterIntake}</div>
-              <div className="text-sm text-[hsl(var(--text-secondary))]">стаканов выпито</div>
+            <div className="relative overflow-hidden">
+              {/* Прогресс бар */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-500/20 to-cyan-500/20 rounded-t-full transition-all duration-500" style={{ height: `${Math.min(100, (waterIntake / 2000) * 100)}%` }}></div>
+              <div className="relative z-10 text-center p-4 bg-blue-500/10 rounded-2xl">
+                <div className="text-4xl font-bold text-blue-500 mb-1">{waterIntake}</div>
+                <div className="text-sm text-[hsl(var(--text-secondary))]">мл выпито</div>
+                <div className="text-xs text-blue-500 mt-2 font-medium">
+                  {waterIntake >= 2000 ? '✅ Норма выполнена!' : `Осталось: ${2000 - waterIntake} мл`}
+                </div>
+              </div>
             </div>
-          </div>
+            <div className="mt-3 text-center text-sm text-[hsl(var(--text-secondary))]">
+              Нажми для записи →
+            </div>
+          </Link>
 
           {/* Вес */}
           <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))]">

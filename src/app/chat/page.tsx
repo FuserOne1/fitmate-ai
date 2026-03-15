@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Send, Sparkles, Utensils, Trash2, Image } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, Utensils, Trash2, Image, Droplets } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 
 type Message = {
@@ -16,6 +16,7 @@ type Message = {
 }
 
 type DiaryData = { calories: number; protein: number; fat: number; carbs: number } | null
+type WaterData = { intake: number } | null
 
 function renderMarkdown(text: string) {
   if (!text) return null
@@ -81,6 +82,7 @@ export default function ChatPage() {
     return [{ role: 'assistant', content: 'Привет, Маша! Я твой AI-помощник FitMate! 💕\n\nСпрашивай что угодно! 😊', timestamp: Date.now() }]
   })
   const [diaryData, setDiaryData] = useState<DiaryData | null>(null)
+  const [waterData, setWaterData] = useState<WaterData | null>(null)
   const [pendingFoodEntry, setPendingFoodEntry] = useState<Message['foodEntry'] | null>(null)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -89,13 +91,36 @@ export default function ChatPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const saved = localStorage.getItem('fitmate-diary')
-    if (saved) {
-      try {
-        const logs = JSON.parse(saved)
-        if (logs[0]?.total) setDiaryData(logs[0].total)
-      } catch {}
+    const loadData = () => {
+      // Дневник питания
+      const saved = localStorage.getItem('fitmate-diary')
+      if (saved) {
+        try {
+          const logs = JSON.parse(saved)
+          if (logs[0]?.total) setDiaryData(logs[0].total)
+        } catch {}
+      }
+      
+      // Вода
+      const waterSaved = localStorage.getItem('fitmate-water')
+      if (waterSaved) {
+        try {
+          const logs = JSON.parse(waterSaved)
+          const today = new Date().toISOString().split('T')[0]
+          const todayLog = logs.find((log: any) => log.date === today)
+          if (todayLog) {
+            setWaterData({ intake: todayLog.intake || 0 })
+          }
+        } catch {}
+      }
     }
+    
+    loadData()
+    
+    // Слушаем изменения в localStorage
+    const handleStorageChange = () => loadData()
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
   useEffect(() => {
@@ -272,6 +297,32 @@ export default function ChatPage() {
               <div><p className="text-lg font-bold text-yellow-500">{diaryData.fat}</p><p className="text-xs">жиры</p></div>
               <div><p className="text-lg font-bold text-green-500">{diaryData.carbs}</p><p className="text-xs">углеводы</p></div>
             </div>
+          </div>
+        )}
+
+        {waterData && waterData.intake > 0 && (
+          <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-md border border-[hsl(var(--border))] mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-blue-500" />
+                <p className="text-sm font-medium">Вода за сегодня:</p>
+              </div>
+              <Link href="/water" className="text-xs text-blue-500 hover:underline">Изменить →</Link>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <div className="h-3 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-500"
+                    style={{ width: `${Math.min(100, (waterData.intake / 2000) * 100)}%` }}
+                  />
+                </div>
+              </div>
+              <p className="text-lg font-bold text-blue-500 min-w-[80px] text-right">{waterData.intake} мл</p>
+            </div>
+            <p className="text-xs text-[hsl(var(--text-secondary))] mt-2 text-center">
+              {waterData.intake >= 2000 ? '✅ Норма выполнена!' : `Осталось: ${2000 - waterData.intake} мл`}
+            </p>
           </div>
         )}
 
