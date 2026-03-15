@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Send, Sparkles } from 'lucide-react'
-import { chatWithAI } from '@/lib/ai/openrouter'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -38,32 +37,27 @@ export default function ChatPage() {
     setLoading(true)
 
     try {
-      const result = await chatWithAI({
-        messages: [
-          {
-            role: 'system',
-            content: `Ты - дружелюбный AI-помощник для похудения FitMate.
-Твоя задача: поддерживать пользователя, отвечать на вопросы о питании, давать советы.
-Будь позитивным, мотивируй, но не давай медицинских рекомендаций.
-Общайся на русском языке, используй эмодзи уместно.
-Ты разговариваешь с девушкой по имени Маша.`,
-          },
-          ...messages.map((m) => ({ role: m.role, content: m.content })),
-          { role: 'user', content: input },
-        ],
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        }),
       })
 
-      if (result.success && result.data) {
+      const data = await response.json()
+
+      if (response.ok && data.data) {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: result.data! },
+          { role: 'assistant', content: data.data },
         ])
       } else {
         setMessages((prev) => [
           ...prev,
           {
             role: 'assistant',
-            content: 'Ой, что-то пошло не так 😅 Попробуй ещё раз!',
+            content: `Ошибка: ${data.error || 'Что-то пошло не так 😅'}`,
           },
         ])
       }
