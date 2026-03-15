@@ -101,6 +101,18 @@ export default function HomePage() {
         </div>
       </main>
 
+      {/* Romantic Footer */}
+      <div className="fixed bottom-20 left-0 right-0 flex justify-center pointer-events-none">
+        <div className="bg-white/90 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg shadow-rose-200 animate-fade-in">
+          <p className="text-sm text-gray-600 flex items-center gap-2">
+            <span className="text-rose-500">❤️</span>
+            <span className="font-medium">Created with love by FuserOne1</span>
+            <span className="text-rose-500">❤️</span>
+            <span className="text-rose-600 font-semibold">for Mashutka</span>
+          </p>
+        </div>
+      </div>
+
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-rose-100">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-around">
@@ -124,7 +136,7 @@ export default function HomePage() {
       </nav>
 
       {/* Spacer for bottom nav */}
-      <div className="h-20"></div>
+      <div className="h-24"></div>
     </div>
   )
 }
