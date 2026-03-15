@@ -164,22 +164,18 @@ export default function ChatPage() {
       const data = await response.json()
       console.log('AI response data:', data)
 
-      if (data.success && data.data) {
+      if (data.data) {
         console.log('Raw data.data:', data.data)
         // Очищаем от markdown-обертки (```json ... ```)
         let jsonStr = data.data
         // Пробуем разные варианты regex для markdown блоков
-        const markdownMatch = data.data.match(/```(?:json)?\s*([\s\S]*?)```/) || 
+        const markdownMatch = data.data.match(/```(?:json)?\s*([\s\S]*?)```/) ||
                               data.data.match(/```\s*([\s\S]*?)```/)
         if (markdownMatch) {
           jsonStr = markdownMatch[1].trim()
         } else {
-          // Если нет markdown-обертки, пробуем найти JSON по первой { и последней }
-          const firstBrace = data.data.indexOf('{')
-          const lastBrace = data.data.lastIndexOf('}')
-          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-            jsonStr = data.data.slice(firstBrace, lastBrace + 1)
-          }
+          // Если нет markdown-обертки, используем как есть
+          jsonStr = data.data
         }
 
         try {
@@ -190,19 +186,19 @@ export default function ChatPage() {
         } catch (parseError: any) {
           console.error('JSON parse error:', parseError, 'jsonStr:', jsonStr)
           // Выводим ошибку в чат вместо alert
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: `😕 Не удалось распознать фото\n\n${parseError.message || 'Попробуй другое фото'}`, 
-            timestamp: Date.now() 
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `😕 Не удалось распознать фото\n\n${parseError.message || 'Попробуй другое фото'}`,
+            timestamp: Date.now()
           }])
         }
       } else {
         console.error('Analysis failed:', data)
         // Выводим ошибку в чат вместо alert
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `😕 Не удалось распознать фото\n\n${data.error || 'Попробуй другое фото'}`, 
-          timestamp: Date.now() 
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `😕 Не удалось распознать фото\n\n${data.error || 'Попробуй другое фото'}`,
+          timestamp: Date.now()
         }])
       }
     } catch (error: any) {
