@@ -18,20 +18,16 @@ type Message = {
 type DiaryData = { calories: number; protein: number; fat: number; carbs: number } | null
 type WaterData = { intake: number } | null
 
-// Хук для получения сегодняшних продуктов из дневника
-function getTodayFoodItems(): string[] {
-  if (typeof window === 'undefined') return []
-  const saved = localStorage.getItem('fitmate-diary')
-  if (!saved) return []
-  try {
-    const logs = JSON.parse(saved)
-    const today = new Date().toISOString().split('T')[0]
-    const todayLog = logs.find((log: any) => log.date === today)
-    if (!todayLog || !todayLog.items) return []
-    return todayLog.items.map((item: any) => item.name.toLowerCase())
-  } catch {
-    return []
-  }
+// Проверка дубликатов: сравниваем названия продуктов
+function isDuplicate(newItemName: string, existingItems: Array<{name: string}>): boolean {
+  const newName = newItemName.toLowerCase().trim()
+  return existingItems.some(existing => {
+    const existingName = existing.name.toLowerCase().trim()
+    // Полное совпадение или одно содержит другое
+    return newName === existingName || 
+           newName.includes(existingName) || 
+           existingName.includes(newName)
+  })
 }
 
 function renderMarkdown(text: string) {
@@ -170,12 +166,25 @@ export default function ChatPage() {
       if (response.ok && data.data) {
         const foodEntry = parseFoodEntry(data.data)
         
-        // Проверяем дубликаты
+        // Проверяем дубликаты с тем, что УЖЕ записано в дневник сегодня
         if (foodEntry) {
-          const todayItems = getTodayFoodItems()
-          const newItems = foodEntry.items.filter(item => 
-            !todayItems.some(todayItem => todayItem.includes(item.name.toLowerCase()) || item.name.toLowerCase().includes(todayItem))
-          )
+          // Получаем реально записанные продукты из localStorage
+          const saved = localStorage.getItem('fitmate-diary')
+          const today = new Date().toISOString().split('T')[0]
+          let todayItems: Array<{name: string}> = []
+          
+          if (saved) {
+            try {
+              const logs = JSON.parse(saved)
+              const todayLog = logs.find((log: any) => log.date === today)
+              if (todayLog && todayLog.items) {
+                todayItems = todayLog.items
+              }
+            } catch {}
+          }
+          
+          // Фильтруем только новые продукты
+          const newItems = foodEntry.items.filter(item => !isDuplicate(item.name, todayItems))
           
           if (newItems.length === 0) {
             // Все продукты уже записаны сегодня
@@ -186,8 +195,22 @@ export default function ChatPage() {
             }])
           } else if (newItems.length < foodEntry.items.length) {
             // Часть продуктов уже записана
-            const partialEntry = { ...foodEntry, items: newItems }
-            setMessages(prev => [...prev, { role: 'assistant', content: cleanContent(data.data), timestamp: Date.now(), foodEntry: partialEntry }])
+            const partialEntry = { 
+              ...foodEntry, 
+              items: newItems,
+              total: {
+                calories: newItems.reduce((sum, i) => sum + i.calories, 0),
+                protein: newItems.reduce((sum, i) => sum + i.protein, 0),
+                fat: newItems.reduce((sum, i) => sum + i.fat, 0),
+                carbs: newItems.reduce((sum, i) => sum + i.carbs, 0)
+              }
+            }
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `⚠️ Часть продуктов уже записана. Добавлю только новое:`,
+              timestamp: Date.now(), 
+              foodEntry: partialEntry 
+            }])
             setPendingFoodEntry(partialEntry)
           } else {
             // Все продукты новые
@@ -255,8 +278,56 @@ export default function ChatPage() {
         try {
           const parsed = JSON.parse(jsonStr)
           const foodEntry = { items: parsed.items || [], total: parsed.total || { calories: 0, protein: 0, fat: 0, carbs: 0 } }
-          setPendingFoodEntry(foodEntry)
-          setMessages(prev => [...prev, { role: 'assistant', content: `📸 ${parsed.comment || 'Вот что я нашёл:'}`, timestamp: Date.now(), foodEntry }])
+          
+          // Проверяем дубликаты с тем, что УЖЕ записано в дневник сегодня
+          const saved = localStorage.getItem('fitmate-diary')
+          const today = new Date().toISOString().split('T')[0]
+          let todayItems: Array<{name: string}> = []
+          
+          if (saved) {
+            try {
+              const logs = JSON.parse(saved)
+              const todayLog = logs.find((log: any) => log.date === today)
+              if (todayLog && todayLog.items) {
+                todayItems = todayLog.items
+              }
+            } catch {}
+          }
+          
+          // Фильтруем только новые продукты
+          const newItems = foodEntry.items.filter(item => !isDuplicate(item.name, todayItems))
+          
+          if (newItems.length === 0) {
+            // Все продукты уже записаны сегодня
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `📸 ${parsed.comment || 'Вот что я нашёл:'}\n\n✅ Это уже записано в дневнике сегодня! 💕`, 
+              timestamp: Date.now() 
+            }])
+          } else if (newItems.length < foodEntry.items.length) {
+            // Часть продуктов уже записана
+            const partialEntry = { 
+              ...foodEntry, 
+              items: newItems,
+              total: {
+                calories: newItems.reduce((sum, i) => sum + i.calories, 0),
+                protein: newItems.reduce((sum, i) => sum + i.protein, 0),
+                fat: newItems.reduce((sum, i) => sum + i.fat, 0),
+                carbs: newItems.reduce((sum, i) => sum + i.carbs, 0)
+              }
+            }
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `📸 ${parsed.comment || 'Вот что я нашёл:'}\n\n⚠️ Часть продуктов уже записана. Добавлю только новое:`, 
+              timestamp: Date.now(), 
+              foodEntry: partialEntry 
+            }])
+            setPendingFoodEntry(partialEntry)
+          } else {
+            // Все продукты новые
+            setPendingFoodEntry(foodEntry)
+            setMessages(prev => [...prev, { role: 'assistant', content: `📸 ${parsed.comment || 'Вот что я нашёл:'}`, timestamp: Date.now(), foodEntry }])
+          }
         } catch (parseError: any) {
           console.error('JSON parse error:', parseError, 'jsonStr:', jsonStr)
           // Выводим ошибку в чат вместо alert
