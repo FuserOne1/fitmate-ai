@@ -3,58 +3,85 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 340 100% 98%;
-    --foreground: 340 5% 10%;
+  /* Rose theme (default) */
+  [data-theme='rose'] {
+    --bg-primary: 340 100% 98%;
+    --bg-secondary: 0 0% 100%;
+    --text-primary: 340 5% 10%;
+    --text-secondary: 340 5% 40%;
+    --primary: 350 85% 60%;
+    --primary-foreground: 0 0% 100%;
+    --border: 340 20% 90%;
+    --muted: 340 10% 95%;
     --card: 0 0% 100%;
     --card-foreground: 340 5% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 340 5% 10%;
-    --primary: 350 85% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 340 20% 95%;
-    --secondary-foreground: 340 5% 10%;
-    --muted: 340 10% 95%;
-    --muted-foreground: 340 5% 45%;
-    --accent: 350 85% 95%;
-    --accent-foreground: 350 85% 40%;
-    --destructive: 0 85% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 340 20% 90%;
-    --input: 340 20% 90%;
-    --ring: 350 85% 60%;
-    --radius: 1rem;
   }
 
-  .dark {
-    --background: 340 10% 5%;
-    --foreground: 340 5% 95%;
-    --card: 340 10% 8%;
-    --card-foreground: 340 5% 95%;
-    --popover: 340 10% 8%;
-    --popover-foreground: 340 5% 95%;
-    --primary: 350 85% 60%;
+  /* Lavender theme */
+  [data-theme='lavender'] {
+    --bg-primary: 250 100% 98%;
+    --bg-secondary: 0 0% 100%;
+    --text-primary: 250 20% 15%;
+    --text-secondary: 250 10% 40%;
+    --primary: 260 85% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 340 10% 15%;
-    --secondary-foreground: 340 5% 95%;
-    --muted: 340 10% 15%;
-    --muted-foreground: 340 5% 65%;
-    --accent: 350 85% 20%;
-    --accent-foreground: 350 85% 70%;
-    --destructive: 0 85% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 340 10% 20%;
-    --input: 340 10% 20%;
-    --ring: 350 85% 60%;
+    --border: 250 20% 90%;
+    --muted: 250 10% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 250 5% 10%;
+  }
+
+  /* Peach theme */
+  [data-theme='peach'] {
+    --bg-primary: 30 100% 97%;
+    --bg-secondary: 0 0% 100%;
+    --text-primary: 30 20% 15%;
+    --text-secondary: 30 10% 40%;
+    --primary: 25 95% 55%;
+    --primary-foreground: 0 0% 100%;
+    --border: 30 20% 90%;
+    --muted: 30 10% 95%;
+    --card: 0 0% 100%;
+    --card-foreground: 30 5% 10%;
+  }
+
+  /* Sage theme */
+  [data-theme='sage'] {
+    --bg-primary: 120 30% 96%;
+    --bg-secondary: 0 0% 100%;
+    --text-primary: 120 20% 15%;
+    --text-secondary: 120 10% 35%;
+    --primary: 140 40% 50%;
+    --primary-foreground: 0 0% 100%;
+    --border: 120 20% 85%;
+    --muted: 120 10% 92%;
+    --card: 0 0% 100%;
+    --card-foreground: 120 5% 10%;
+  }
+
+  /* Dark theme */
+  [data-theme='dark'] {
+    --bg-primary: 0 0% 8%;
+    --bg-secondary: 0 0% 12%;
+    --text-primary: 0 0% 95%;
+    --text-secondary: 0 0% 70%;
+    --primary: 330 85% 60%;
+    --primary-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+    --muted: 0 0% 15%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 95%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-[hsl(var(--border))];
   }
+  
   body {
-    @apply bg-background text-foreground;
+    background: hsl(var(--bg-primary));
+    color: hsl(var(--text-primary));
   }
 }
 
@@ -77,12 +104,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
+  background: hsl(var(--text-secondary) / 0.3);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
+  background: hsl(var(--text-secondary) / 0.5);
 }
 
 /* Анимации */

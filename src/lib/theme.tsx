@@ -69,7 +69,7 @@ const themes: Record<Theme, ThemeConfig> = {
       primaryBg: 'bg-pink-500',
       primaryText: 'text-pink-400',
       gradient: 'from-gray-900 to-gray-800',
-      bg: 'bg-gradient-to-br from-gray-900 to-gray-800',
+      bg: 'bg-[hsl(var(--bg-primary))]',
     },
   },
 }
