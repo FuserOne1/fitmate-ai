@@ -23,6 +23,8 @@ export default function HomePage() {
   const [phrase, setPhrase] = useState(CUTE_PHRASES[0])
   const { themeConfig } = useTheme()
   const [diaryData, setDiaryData] = useState({ calories: 0, protein: 0, fat: 0, carbs: 0 })
+  const [waterIntake, setWaterIntake] = useState(0)
+  const [weight, setWeight] = useState<number | null>(null)
 
   useEffect(() => {
     // Выбираем случайную фразу при загрузке
@@ -31,26 +33,51 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
-    // Загружаем данные из дневника
-    const loadDiaryData = () => {
-      const saved = localStorage.getItem('fitmate-diary')
-      if (saved) {
+    // Загружаем все данные
+    const loadAllData = () => {
+      // Дневник питания
+      const diarySaved = localStorage.getItem('fitmate-diary')
+      if (diarySaved) {
         try {
-          const logs = JSON.parse(saved)
+          const logs = JSON.parse(diarySaved)
           const today = logs[0]
           if (today && today.total) {
             setDiaryData(today.total)
           }
         } catch {}
       }
+      
+      // Вода (ищем за сегодня)
+      const waterSaved = localStorage.getItem('fitmate-water')
+      if (waterSaved) {
+        try {
+          const logs = JSON.parse(waterSaved)
+          const today = new Date().toISOString().split('T')[0]
+          const todayLog = logs.find((log: any) => log.date === today)
+          if (todayLog) {
+            setWaterIntake(todayLog.intake || 0)
+          }
+        } catch {}
+      }
+      
+      // Вес (последняя запись)
+      const weightSaved = localStorage.getItem('fitmate-weight')
+      if (weightSaved) {
+        try {
+          const logs = JSON.parse(weightSaved)
+          if (logs && logs.length > 0) {
+            setWeight(logs[0].weight)
+          }
+        } catch {}
+      }
     }
     
-    loadDiaryData()
+    loadAllData()
     
     // Слушаем изменения в localStorage
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'fitmate-diary') {
-        loadDiaryData()
+      if (['fitmate-diary', 'fitmate-water', 'fitmate-weight'].includes(e.key || '')) {
+        loadAllData()
       }
     }
     
@@ -123,22 +150,40 @@ export default function HomePage() {
         </div>
 
         {/* Статистика за день */}
-        <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg mb-6 border border-[hsl(var(--border))]">
+        <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))] mb-6">
           <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4">📊 Сегодня</h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className={`text-2xl font-bold ${themeConfig.colors.primaryText}`}>{diaryData.calories}</div>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="text-center p-4 bg-[hsl(var(--muted))] rounded-2xl">
+              <div className={`text-3xl font-bold ${themeConfig.colors.primaryText} mb-1`}>{diaryData.calories}</div>
               <div className="text-xs text-[hsl(var(--text-secondary))]">ккал</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-500">{diaryData.protein}</div>
-              <div className="text-xs text-[hsl(var(--text-secondary))]">белки</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-500">{diaryData.fat}</div>
-              <div className="text-xs text-[hsl(var(--text-secondary))]">жиры</div>
+            <div className="text-center p-4 bg-blue-500/10 rounded-2xl">
+              <div className="text-3xl font-bold text-blue-500 mb-1">{waterIntake}</div>
+              <div className="text-xs text-[hsl(var(--text-secondary))]">стаканов</div>
             </div>
           </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <div className="text-lg font-bold text-[hsl(var(--text-primary))]">{diaryData.protein}</div>
+              <div className="text-xs text-[hsl(var(--text-secondary))]">белки</div>
+            </div>
+            <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <div className="text-lg font-bold text-[hsl(var(--text-primary))]">{diaryData.fat}</div>
+              <div className="text-xs text-[hsl(var(--text-secondary))]">жиры</div>
+            </div>
+            <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <div className="text-lg font-bold text-[hsl(var(--text-primary))]">{diaryData.carbs}</div>
+              <div className="text-xs text-[hsl(var(--text-secondary))]">углеводы</div>
+            </div>
+          </div>
+          {weight && (
+            <div className="mt-4 pt-4 border-t border-[hsl(var(--border))]">
+              <div className="text-center">
+                <div className="text-sm text-[hsl(var(--text-secondary))] mb-1">⚖️ Вес</div>
+                <div className="text-2xl font-bold text-purple-500">{weight} кг</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Настройки */}
