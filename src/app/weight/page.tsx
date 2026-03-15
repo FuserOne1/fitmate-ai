@@ -10,6 +10,7 @@ type WeightLog = {
   weight: number
   fatPercent?: number
   muscleMass?: number
+  time?: string
 }
 
 function getMoscowDate(): string {
