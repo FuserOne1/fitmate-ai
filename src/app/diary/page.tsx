@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Send, Utensils, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Send, Utensils, Plus, Trash2, History } from 'lucide-react'
 
 type FoodItem = {
   name: string
@@ -14,7 +14,7 @@ type FoodItem = {
 }
 
 type DailyLog = {
-  date: string
+  date: string // YYYY-MM-DD
   items: FoodItem[]
   total: {
     calories: number
@@ -24,36 +24,124 @@ type DailyLog = {
   }
 }
 
+// Получение текущей даты в формате YYYY-MM-DD по МСК
+function getMoscowDate(): string {
+  const now = new Date()
+  const moscowTime = new Date(now.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))
+  return moscowTime.toISOString().split('T')[0]
+}
+
+// Получение текущей даты для отображения
+function getDisplayDate(dateStr: string): string {
+  const date = new Date(dateStr + 'T00:00:00')
+  const today = new Date()
+  const moscowToday = new Date(today.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))
+  
+  if (dateStr === getMoscowDate()) {
+    return 'Сегодня'
+  }
+  
+  const yesterday = new Date(moscowToday)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (dateStr === yesterday.toISOString().split('T')[0]) {
+    return 'Вчера'
+  }
+  
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+}
+
 export default function DiaryPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [parsedItems, setParsedItems] = useState<FoodItem[]>([])
   const [showConfirm, setShowConfirm] = useState(false)
-  const [logs, setLogs] = useState<DailyLog[]>(() => {
-    // Загрузка из localStorage при первом рендере
+  const [logs, setLogs] = useState<DailyLog[]>([])
+  const [selectedDate, setSelectedDate] = useState(getMoscowDate())
+
+  // Загрузка из localStorage при первом рендере
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('fitmate-diary')
       if (saved) {
         try {
-          return JSON.parse(saved)
-        } catch {}
+          const parsedLogs = JSON.parse(saved)
+          
+          // Проверяем, есть ли запись за сегодня
+          const today = getMoscowDate()
+          const todayLog = parsedLogs.find((log: DailyLog) => log.date === today)
+          
+          if (!todayLog) {
+            // Добавляем запись за сегодня
+            parsedLogs.unshift({
+              date: today,
+              items: [],
+              total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+            })
+          }
+          
+          setLogs(parsedLogs)
+        } catch (e) {
+          console.error('Failed to parse diary:', e)
+          setLogs([
+            {
+              date: getMoscowDate(),
+              items: [],
+              total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+            },
+          ])
+        }
+      } else {
+        setLogs([
+          {
+            date: getMoscowDate(),
+            items: [],
+            total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+          },
+        ])
       }
     }
-    return [
-      {
-        date: new Date().toLocaleDateString('ru-RU'),
-        items: [],
-        total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-      },
-    ]
-  })
+  }, [])
 
   // Сохранение в localStorage при изменении
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (logs.length > 0 && typeof window !== 'undefined') {
       localStorage.setItem('fitmate-diary', JSON.stringify(logs))
     }
   }, [logs])
+
+  // Проверка смены даты (полночь по МСК)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentMoscowDate = getMoscowDate()
+      if (selectedDate !== currentMoscowDate) {
+        setSelectedDate(currentMoscowDate)
+        
+        // Проверяем, есть ли запись за новую дату
+        setLogs(prevLogs => {
+          const todayLog = prevLogs.find(log => log.date === currentMoscowDate)
+          if (!todayLog) {
+            return [
+              {
+                date: currentMoscowDate,
+                items: [],
+                total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+              },
+              ...prevLogs,
+            ]
+          }
+          return prevLogs
+        })
+      }
+    }, 60000) // Проверяем каждую минуту
+
+    return () => clearInterval(interval)
+  }, [selectedDate])
+
+  const currentLog = logs.find(log => log.date === selectedDate) || {
+    date: selectedDate,
+    items: [],
+    total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+  }
 
   async function parseFood() {
     if (!input.trim() || loading) return
@@ -83,24 +171,48 @@ export default function DiaryPage() {
   }
 
   function addToDiary() {
-    const total = parsedItems.reduce(
-      (acc, item) => ({
-        calories: acc.calories + item.calories,
-        protein: acc.protein + item.protein,
-        fat: acc.fat + item.fat,
-        carbs: acc.carbs + item.carbs,
-      }),
-      { calories: 0, protein: 0, fat: 0, carbs: 0 }
-    )
-
-    setLogs([
-      {
-        date: new Date().toLocaleDateString('ru-RU'),
-        items: [...parsedItems, ...logs[0].items],
-        total,
-      },
-      ...logs.slice(1),
-    ])
+    setLogs(prevLogs => {
+      const newLogs = [...prevLogs]
+      const todayIndex = newLogs.findIndex(log => log.date === selectedDate)
+      
+      if (todayIndex === -1) {
+        // Создаём новую запись за сегодня
+        const newLog: DailyLog = {
+          date: selectedDate,
+          items: parsedItems,
+          total: parsedItems.reduce(
+            (acc, item) => ({
+              calories: acc.calories + item.calories,
+              protein: acc.protein + item.protein,
+              fat: acc.fat + item.fat,
+              carbs: acc.carbs + item.carbs,
+            }),
+            { calories: 0, protein: 0, fat: 0, carbs: 0 }
+          ),
+        }
+        newLogs.unshift(newLog)
+      } else {
+        // Обновляем существующую запись
+        const todayLog = newLogs[todayIndex]
+        const newItems = [...parsedItems, ...todayLog.items]
+        const newTotal = newItems.reduce(
+          (acc, item) => ({
+            calories: acc.calories + item.calories,
+            protein: acc.protein + item.protein,
+            fat: acc.fat + item.fat,
+            carbs: acc.carbs + item.carbs,
+          }),
+          { calories: 0, protein: 0, fat: 0, carbs: 0 }
+        )
+        newLogs[todayIndex] = {
+          ...todayLog,
+          items: newItems,
+          total: newTotal,
+        }
+      }
+      
+      return newLogs
+    })
 
     setParsedItems([])
     setShowConfirm(false)
@@ -108,25 +220,32 @@ export default function DiaryPage() {
   }
 
   function removeItem(index: number) {
-    setLogs([
-      {
-        ...logs[0],
-        items: logs[0].items.filter((_, i) => i !== index),
-        total: logs[0].items.reduce(
-          (acc, item, i) => {
-            if (i === index) return acc
-            return {
-              calories: acc.calories + item.calories,
-              protein: acc.protein + item.protein,
-              fat: acc.fat + item.fat,
-              carbs: acc.carbs + item.carbs,
-            }
-          },
-          { calories: 0, protein: 0, fat: 0, carbs: 0 }
-        ),
-      },
-      ...logs.slice(1),
-    ])
+    setLogs(prevLogs => {
+      const newLogs = [...prevLogs]
+      const todayIndex = newLogs.findIndex(log => log.date === selectedDate)
+      
+      if (todayIndex === -1) return prevLogs
+      
+      const todayLog = newLogs[todayIndex]
+      const newItems = todayLog.items.filter((_, i) => i !== index)
+      const newTotal = newItems.reduce(
+        (acc, item) => ({
+          calories: acc.calories + item.calories,
+          protein: acc.protein + item.protein,
+          fat: acc.fat + item.fat,
+          carbs: acc.carbs + item.carbs,
+        }),
+        { calories: 0, protein: 0, fat: 0, carbs: 0 }
+      )
+      
+      newLogs[todayIndex] = {
+        ...todayLog,
+        items: newItems,
+        total: newTotal,
+      }
+      
+      return newLogs
+    })
   }
 
   return (
@@ -149,6 +268,31 @@ export default function DiaryPage() {
 
       {/* Main Content */}
       <main className="max-w-3xl mx-auto px-4 py-6">
+        {/* Date Selector */}
+        <div className="bg-white rounded-2xl p-4 shadow-md shadow-rose-100 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+              <History className="w-5 h-5 text-rose-500" />
+              {getDisplayDate(selectedDate)}
+            </h2>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            {logs.slice(0, 7).map(log => (
+              <button
+                key={log.date}
+                onClick={() => setSelectedDate(log.date)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedDate === log.date
+                    ? 'bg-rose-500 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {getDisplayDate(log.date)}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Input Section */}
         <div className="bg-white rounded-3xl p-6 shadow-lg shadow-rose-100 mb-6">
           <h2 className="text-lg font-bold text-gray-800 mb-4">
@@ -232,39 +376,39 @@ export default function DiaryPage() {
         {/* Today's Summary */}
         <div className="bg-white rounded-3xl p-6 shadow-lg shadow-rose-100 mb-6">
           <h2 className="text-lg font-bold text-gray-800 mb-4">
-            📊 Сегодня ({logs[0].date})
+            📊 {getDisplayDate(selectedDate)}
           </h2>
           <div className="grid grid-cols-4 gap-3 mb-4">
             <div className="text-center p-3 bg-rose-50 rounded-xl">
               <p className="text-2xl font-bold text-rose-600">
-                {logs[0].total.calories}
+                {currentLog.total.calories}
               </p>
               <p className="text-xs text-gray-500">ккал</p>
             </div>
             <div className="text-center p-3 bg-blue-50 rounded-xl">
               <p className="text-2xl font-bold text-blue-600">
-                {logs[0].total.protein}
+                {currentLog.total.protein}
               </p>
               <p className="text-xs text-gray-500">белки</p>
             </div>
             <div className="text-center p-3 bg-yellow-50 rounded-xl">
               <p className="text-2xl font-bold text-yellow-600">
-                {logs[0].total.fat}
+                {currentLog.total.fat}
               </p>
               <p className="text-xs text-gray-500">жиры</p>
             </div>
             <div className="text-center p-3 bg-green-50 rounded-xl">
               <p className="text-2xl font-bold text-green-600">
-                {logs[0].total.carbs}
+                {currentLog.total.carbs}
               </p>
               <p className="text-xs text-gray-500">углеводы</p>
             </div>
           </div>
 
           {/* Food List */}
-          {logs[0].items.length > 0 && (
+          {currentLog.items.length > 0 && (
             <div className="space-y-2">
-              {logs[0].items.map((item, index) => (
+              {currentLog.items.map((item, index) => (
                 <div
                   key={index}
                   className="flex justify-between items-center p-3 bg-gray-50 rounded-xl"
@@ -284,7 +428,7 @@ export default function DiaryPage() {
             </div>
           )}
 
-          {logs[0].items.length === 0 && (
+          {currentLog.items.length === 0 && (
             <p className="text-center text-gray-500 text-sm py-8">
               Пока ничего не записано 🍃
             </p>

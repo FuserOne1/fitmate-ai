@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Utensils, Droplets, Scale, MessageCircle, User, Settings, Heart } from 'lucide-react'
+import { useTheme } from '@/lib/theme'
 
 // Милые фразы от Сережи
 const CUTE_PHRASES = [
@@ -20,6 +21,7 @@ const CUTE_PHRASES = [
 
 export default function HomePage() {
   const [phrase, setPhrase] = useState(CUTE_PHRASES[0])
+  const { themeConfig } = useTheme()
 
   useEffect(() => {
     // Выбираем случайную фразу при загрузке
@@ -27,7 +29,7 @@ export default function HomePage() {
     setPhrase(random)
   }, [])
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-100">
+    <div className={`min-h-screen ${themeConfig.colors.bg}`}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-rose-100">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
