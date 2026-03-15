@@ -1,5 +1,6 @@
 -- FitMate AI Database Schema for Supabase
 -- Выполните этот SQL в Supabase SQL Editor
+-- Если политики уже существуют - скрипт пропустит их создание
 
 -- ============================================
 -- ТАБЛИЦЫ
@@ -188,93 +189,173 @@ ALTER TABLE scale_screenshots ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_chats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
 
--- Политики для profiles
-CREATE POLICY "Пользователи видят свой профиль"
-  ON profiles FOR SELECT
-  USING (auth.uid() = id);
+-- Политики для profiles (с проверкой на существование)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свой профиль') THEN
+    CREATE POLICY "Пользователи видят свой профиль"
+      ON profiles FOR SELECT
+      USING (auth.uid() = id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи обновляют свой профиль"
-  ON profiles FOR UPDATE
-  USING (auth.uid() = id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи обновляют свой профиль') THEN
+    CREATE POLICY "Пользователи обновляют свой профиль"
+      ON profiles FOR UPDATE
+      USING (auth.uid() = id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи создают свой профиль"
-  ON profiles FOR INSERT
-  WITH CHECK (auth.uid() = id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи создают свой профиль') THEN
+    CREATE POLICY "Пользователи создают свой профиль"
+      ON profiles FOR INSERT
+      WITH CHECK (auth.uid() = id);
+  END IF;
+END $$;
 
 -- Политики для daily_logs
-CREATE POLICY "Пользователи видят свои логи"
-  ON daily_logs FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свои логи') THEN
+    CREATE POLICY "Пользователи видят свои логи"
+      ON daily_logs FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи создают свои логи"
-  ON daily_logs FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи создают свои логи') THEN
+    CREATE POLICY "Пользователи создают свои логи"
+      ON daily_logs FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи обновляют свои логи"
-  ON daily_logs FOR UPDATE
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи обновляют свои логи') THEN
+    CREATE POLICY "Пользователи обновляют свои логи"
+      ON daily_logs FOR UPDATE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Политики для food_entries
-CREATE POLICY "Пользователи видят свои записи о еде"
-  ON food_entries FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свои записи о еде') THEN
+    CREATE POLICY "Пользователи видят свои записи о еде"
+      ON food_entries FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи создают свои записи о еде"
-  ON food_entries FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи создают свои записи о еде') THEN
+    CREATE POLICY "Пользователи создают свои записи о еде"
+      ON food_entries FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи обновляют свои записи о еде"
-  ON food_entries FOR UPDATE
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи обновляют свои записи о еде') THEN
+    CREATE POLICY "Пользователи обновляют свои записи о еде"
+      ON food_entries FOR UPDATE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи удаляют свои записи о еде"
-  ON food_entries FOR DELETE
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи удаляют свои записи о еде') THEN
+    CREATE POLICY "Пользователи удаляют свои записи о еде"
+      ON food_entries FOR DELETE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Политики для weight_logs
-CREATE POLICY "Пользователи видят свои взвешивания"
-  ON weight_logs FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свои взвешивания') THEN
+    CREATE POLICY "Пользователи видят свои взвешивания"
+      ON weight_logs FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи создают свои взвешивания"
-  ON weight_logs FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи создают свои взвешивания') THEN
+    CREATE POLICY "Пользователи создают свои взвешивания"
+      ON weight_logs FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Политики для body_photos
-CREATE POLICY "Пользователи видят свои фото"
-  ON body_photos FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свои фото') THEN
+    CREATE POLICY "Пользователи видят свои фото"
+      ON body_photos FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи загружают свои фото"
-  ON body_photos FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи загружают свои фото') THEN
+    CREATE POLICY "Пользователи загружают свои фото"
+      ON body_photos FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Политики для scale_screenshots
-CREATE POLICY "Пользователи видят свои скриншоты"
-  ON scale_screenshots FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свои скриншоты') THEN
+    CREATE POLICY "Пользователи видят свои скриншоты"
+      ON scale_screenshots FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи загружают свои скриншоты"
-  ON scale_screenshots FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи загружают свои скриншоты') THEN
+    CREATE POLICY "Пользователи загружают свои скриншоты"
+      ON scale_screenshots FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Политики для ai_chats
-CREATE POLICY "Пользователи видят свой чат"
-  ON ai_chats FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свой чат') THEN
+    CREATE POLICY "Пользователи видят свой чат"
+      ON ai_chats FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи пишут в чат"
-  ON ai_chats FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи пишут в чат') THEN
+    CREATE POLICY "Пользователи пишут в чат"
+      ON ai_chats FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Политики для reminders
-CREATE POLICY "Пользователи видят свои напоминания"
-  ON reminders FOR SELECT
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свои напоминания') THEN
+    CREATE POLICY "Пользователи видят свои напоминания"
+      ON reminders FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи управляют своими напоминаниями"
-  ON reminders FOR ALL
-  USING (auth.uid() = user_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи управляют своими напоминаниями') THEN
+    CREATE POLICY "Пользователи управляют своими напоминаниями"
+      ON reminders FOR ALL
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- ============================================
 -- ФУНКЦИИ
@@ -318,50 +399,89 @@ CREATE TRIGGER update_profiles_updated_at
 -- STORAGE BUCKETS
 -- ============================================
 
--- Создать бакеты для хранения фото (через Supabase Dashboard)
--- Или выполните в SQL:
+-- Создать бакеты (игнорируем ошибки если уже существуют)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'food-photos') THEN
+    INSERT INTO storage.buckets (id, name, public) VALUES ('food-photos', 'food-photos', true);
+  END IF;
+END $$;
 
-INSERT INTO storage.buckets (id, name, public)
-VALUES 
-  ('food-photos', 'food-photos', true),
-  ('body-photos', 'body-photos', true),
-  ('scale-screenshots', 'scale-screenshots', true),
-  ('avatars', 'avatars', true);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'body-photos') THEN
+    INSERT INTO storage.buckets (id, name, public) VALUES ('body-photos', 'body-photos', true);
+  END IF;
+END $$;
 
--- Политики для storage
-CREATE POLICY "Пользователи могут загружать фото еды"
-  ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'food-photos' AND auth.uid()::text = (storage.foldername(name))[1]);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'scale-screenshots') THEN
+    INSERT INTO storage.buckets (id, name, public) VALUES ('scale-screenshots', 'scale-screenshots', true);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи могут загружать фото тела"
-  ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'body-photos' AND auth.uid()::text = (storage.foldername(name))[1]);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'avatars') THEN
+    INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи могут загружать скриншоты весов"
-  ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'scale-screenshots' AND auth.uid()::text = (storage.foldername(name))[1]);
+-- Политики для storage (с проверкой)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи могут загружать фото еды') THEN
+    CREATE POLICY "Пользователи могут загружать фото еды"
+      ON storage.objects FOR INSERT
+      WITH CHECK (bucket_id = 'food-photos' AND auth.uid()::text = (storage.foldername(name))[1]);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи могут загружать аватарки"
-  ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи могут загружать фото тела') THEN
+    CREATE POLICY "Пользователи могут загружать фото тела"
+      ON storage.objects FOR INSERT
+      WITH CHECK (bucket_id = 'body-photos' AND auth.uid()::text = (storage.foldername(name))[1]);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи могут видеть свои файлы"
-  ON storage.objects FOR SELECT
-  USING (auth.uid()::text = (storage.foldername(name))[1]);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи могут загружать скриншоты весов') THEN
+    CREATE POLICY "Пользователи могут загружать скриншоты весов"
+      ON storage.objects FOR INSERT
+      WITH CHECK (bucket_id = 'scale-screenshots' AND auth.uid()::text = (storage.foldername(name))[1]);
+  END IF;
+END $$;
 
-CREATE POLICY "Пользователи могут удалять свои файлы"
-  ON storage.objects FOR DELETE
-  USING (auth.uid()::text = (storage.foldername(name))[1]);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи могут загружать аватарки') THEN
+    CREATE POLICY "Пользователи могут загружать аватарки"
+      ON storage.objects FOR INSERT
+      WITH CHECK (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи могут видеть свои файлы') THEN
+    CREATE POLICY "Пользователи могут видеть свои файлы"
+      ON storage.objects FOR SELECT
+      USING (auth.uid()::text = (storage.foldername(name))[1]);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи могут удалять свои файлы') THEN
+    CREATE POLICY "Пользователи могут удалять свои файлы"
+      ON storage.objects FOR DELETE
+      USING (auth.uid()::text = (storage.foldername(name))[1]);
+  END IF;
+END $$;
 
 -- ============================================
 -- ИНДЕКСЫ
 -- ============================================
 
-CREATE INDEX idx_daily_logs_user_date ON daily_logs(user_id, date);
-CREATE INDEX idx_food_entries_user ON food_entries(user_id);
-CREATE INDEX idx_food_entries_daily_log ON food_entries(daily_log_id);
-CREATE INDEX idx_weight_logs_user ON weight_logs(user_id, measured_at);
-CREATE INDEX idx_body_photos_user ON body_photos(user_id, created_at);
-CREATE INDEX idx_scale_screenshots_user ON scale_screenshots(user_id, created_at);
-CREATE INDEX idx_ai_chats_user ON ai_chats(user_id, created_at);
-CREATE INDEX idx_reminders_user ON reminders(user_id);
+CREATE INDEX IF NOT EXISTS idx_daily_logs_user_date ON daily_logs(user_id, date);
+CREATE INDEX IF NOT EXISTS idx_food_entries_user ON food_entries(user_id);
+CREATE INDEX IF NOT EXISTS idx_food_entries_daily_log ON food_entries(daily_log_id);
+CREATE INDEX IF NOT EXISTS idx_weight_logs_user ON weight_logs(user_id, measured_at);
+CREATE INDEX IF NOT EXISTS idx_body_photos_user ON body_photos(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_scale_screenshots_user ON scale_screenshots(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_ai_chats_user ON ai_chats(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders(user_id);
