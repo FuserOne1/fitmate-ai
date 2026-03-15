@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Send, Utensils, Plus, Trash2, History } from 'lucide-react'
+import { useTheme } from '@/lib/theme'
 
 type FoodItem = {
   name: string
@@ -99,6 +100,7 @@ function getDisplayDate(dateStr: string): string {
 }
 
 export default function DiaryPage() {
+  const { themeConfig } = useTheme()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [parsedItems, setParsedItems] = useState<FoodItem[]>([])
@@ -325,19 +327,19 @@ export default function DiaryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-100">
+    <div className={`min-h-screen ${themeConfig.colors.bg} transition-colors duration-300`}>
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-rose-100">
+      <header className="sticky top-0 z-50 bg-[hsl(var(--bg-secondary))]/80 backdrop-blur-lg border-b border-[hsl(var(--border))]">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4">
           <Link
             href="/"
-            className="p-2 hover:bg-rose-100 rounded-xl transition-colors"
+            className="p-2 hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
           >
-            <ArrowLeft className="w-6 h-6 text-rose-600" />
+            <ArrowLeft className={`w-6 h-6 ${themeConfig.colors.primaryText}`} />
           </Link>
           <div className="flex items-center gap-2">
-            <Utensils className="w-6 h-6 text-rose-500" />
-            <h1 className="text-xl font-bold text-gray-800">Дневник Питания</h1>
+            <Utensils className={`w-6 h-6 ${themeConfig.colors.primaryText}`} />
+            <h1 className="text-xl font-bold text-[hsl(var(--text-primary))]">Дневник Питания</h1>
           </div>
         </div>
       </header>

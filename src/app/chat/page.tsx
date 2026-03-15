@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Send, Sparkles, Utensils } from 'lucide-react'
+import { useTheme } from '@/lib/theme'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -18,6 +19,7 @@ type DiaryData = {
 } | null
 
 export default function ChatPage() {
+  const { themeConfig } = useTheme()
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('fitmate-chat')
@@ -187,27 +189,27 @@ export default function ChatPage() {
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 overflow-hidden flex flex-col">
         {/* Diary Context */}
         {diaryData && diaryData.calories > 0 && (
-          <div className="bg-white rounded-2xl p-4 shadow-md shadow-rose-100 mb-4">
+          <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-md border border-[hsl(var(--border))] mb-4">
             <div className="flex items-center gap-2 mb-2">
-              <Utensils className="w-4 h-4 text-rose-500" />
-              <p className="text-sm font-medium text-gray-700">Сегодня съедено:</p>
+              <Utensils className={`w-4 h-4 ${themeConfig.colors.primaryText}`} />
+              <p className="text-sm font-medium text-[hsl(var(--text-primary))]">Сегодня съедено:</p>
             </div>
             <div className="grid grid-cols-4 gap-2 text-center">
               <div>
-                <p className="text-lg font-bold text-rose-600">{diaryData.calories}</p>
-                <p className="text-xs text-gray-500">ккал</p>
+                <p className={`text-lg font-bold ${themeConfig.colors.primaryText}`}>{diaryData.calories}</p>
+                <p className="text-xs text-[hsl(var(--text-secondary))]">ккал</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-blue-600">{diaryData.protein}</p>
-                <p className="text-xs text-gray-500">белки</p>
+                <p className="text-lg font-bold text-blue-500">{diaryData.protein}</p>
+                <p className="text-xs text-[hsl(var(--text-secondary))]">белки</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-yellow-600">{diaryData.fat}</p>
-                <p className="text-xs text-gray-500">жиры</p>
+                <p className="text-lg font-bold text-yellow-500">{diaryData.fat}</p>
+                <p className="text-xs text-[hsl(var(--text-secondary))]">жиры</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-green-600">{diaryData.carbs}</p>
-                <p className="text-xs text-gray-500">углеводы</p>
+                <p className="text-lg font-bold text-green-500">{diaryData.carbs}</p>
+                <p className="text-xs text-[hsl(var(--text-secondary))]">углеводы</p>
               </div>
             </div>
           </div>
@@ -224,8 +226,8 @@ export default function ChatPage() {
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                   message.role === 'user'
-                    ? 'bg-rose-500 text-white rounded-br-md'
-                    : 'bg-white text-gray-800 shadow-md shadow-rose-100 rounded-bl-md'
+                    ? `${themeConfig.colors.primaryBg} text-white rounded-br-md`
+                    : 'bg-[hsl(var(--card))] text-[hsl(var(--text-primary))] shadow-md border border-[hsl(var(--border))] rounded-bl-md'
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -242,15 +244,15 @@ export default function ChatPage() {
           ))}
           {loading && (
             <div className="flex justify-start">
-              <div className="bg-white rounded-2xl px-4 py-3 shadow-md shadow-rose-100">
+              <div className="bg-[hsl(var(--card))] rounded-2xl px-4 py-3 shadow-md border border-[hsl(var(--border))]">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-rose-400 rounded-full animate-bounce" />
+                  <div className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`} />
                   <div
-                    className="w-2 h-2 bg-rose-400 rounded-full animate-bounce"
+                    className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`}
                     style={{ animationDelay: '0.1s' }}
                   />
                   <div
-                    className="w-2 h-2 bg-rose-400 rounded-full animate-bounce"
+                    className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`}
                     style={{ animationDelay: '0.2s' }}
                   />
                 </div>
@@ -261,20 +263,20 @@ export default function ChatPage() {
         </div>
 
         {/* Input */}
-        <div className="bg-white rounded-2xl p-2 shadow-lg shadow-rose-100">
+        <div className="bg-[hsl(var(--card))] rounded-2xl p-2 shadow-lg border border-[hsl(var(--border))]">
           <div className="flex items-end gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Напиши, что съела, или задай вопрос... 💕"
-              className="flex-1 resize-none bg-transparent px-3 py-2 text-sm focus:outline-none max-h-32 min-h-[44px]"
+              className="flex-1 resize-none bg-transparent px-3 py-2 text-sm focus:outline-none max-h-32 min-h-[44px] text-[hsl(var(--text-primary))]"
               rows={1}
             />
             <button
               onClick={sendMessage}
               disabled={loading || !input.trim()}
-              className="p-3 bg-rose-500 text-white rounded-xl hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className={`p-3 ${themeConfig.colors.primaryBg} text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
             >
               <Send className="w-5 h-5" />
             </button>
