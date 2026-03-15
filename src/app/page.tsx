@@ -1,9 +1,31 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Utensils, Droplets, Scale, MessageCircle, User, Settings } from 'lucide-react'
+import { Utensils, Droplets, Scale, MessageCircle, User, Settings, Heart } from 'lucide-react'
+
+// Милые фразы от Сережи
+const CUTE_PHRASES = [
+  'Отлично выглядишь! 💕',
+  'У тебя всё получится! 💪',
+  'Пей больше водички! 💧',
+  'Люблю тебя! — Сережа ❤️',
+  'Ты самая красивая! 🌸',
+  'Горжусь тобой! 🥰',
+  'Ты молодец! Так держать! ✨',
+  'Каждый шаг к цели — это победа! 🎯',
+  'Ты сильнее, чем думаешь! 💖',
+  'Сияй, моя хорошая! 🌟',
+]
 
 export default function HomePage() {
+  const [phrase, setPhrase] = useState(CUTE_PHRASES[0])
+
+  useEffect(() => {
+    // Выбираем случайную фразу при загрузке
+    const random = CUTE_PHRASES[Math.floor(Math.random() * CUTE_PHRASES.length)]
+    setPhrase(random)
+  }, [])
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-100">
       {/* Header */}
@@ -22,9 +44,16 @@ export default function HomePage() {
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
             Привет! 👋
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             Твой умный помощник для похудения
           </p>
+          <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl p-4 border border-rose-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+              <p className="text-xs text-rose-600 font-medium">От Сережи с любовью</p>
+            </div>
+            <p className="text-rose-700 font-medium italic">"{phrase}"</p>
+          </div>
         </div>
 
         {/* Быстрые действия */}

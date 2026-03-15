@@ -2,23 +2,73 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Send, Sparkles } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, Utensils } from 'lucide-react'
 
 type Message = {
   role: 'user' | 'assistant'
   content: string
+  timestamp: number
+}
+
+type DiaryData = {
+  items: Array<{
+    name: string
+    calories: number
+    protein: number
+    fat: number
+    carbs: number
+  }>
+  total: {
+    calories: number
+    protein: number
+    fat: number
+    carbs: number
+  }
 }
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Привет! Я твой AI-помощник FitMate! 💕\n\nМогу помочь с:\n• Вопросами о питании\n• Советами по тренировкам\n• Мотивацией\n• Расчётом калорий\n\nСпрашивай что угодно! 😊',
-    },
-  ])
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('fitmate-chat')
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch {}
+      }
+    }
+    return [
+      {
+        role: 'assistant',
+        content: 'Привет, Маша! Я твой AI-помощник FitMate! 💕\n\nМогу помочь с:\n• Вопросами о питании\n• Советами по тренировкам\n• Мотивацией\n• Расчётом калорий\n\nА ещё я знаю, что ты сегодня ела — могу помочь записать обед! 😊',
+        timestamp: Date.now(),
+      },
+    ]
+  })
+  
+  const [diaryData, setDiaryData] = useState<DiaryData | null>(null)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Загрузка данных из дневника
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('fitmate-diary')
+      if (saved) {
+        try {
+          const logs = JSON.parse(saved)
+          setDiaryData(logs[0]?.total || { calories: 0, protein: 0, fat: 0, carbs: 0 })
+        } catch {}
+      }
+    }
+  }, [])
+
+  // Сохранение чата
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('fitmate-chat', JSON.stringify(messages))
+    }
+  }, [messages])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -31,17 +81,30 @@ export default function ChatPage() {
   async function sendMessage() {
     if (!input.trim() || loading) return
 
-    const userMessage: Message = { role: 'user', content: input }
+    const userMessage: Message = { 
+      role: 'user', 
+      content: input,
+      timestamp: Date.now()
+    }
     setMessages((prev) => [...prev, userMessage])
     setInput('')
     setLoading(true)
 
     try {
+      // Формируем контекст из дневника
+      const diaryContext = diaryData 
+        ? `\n\n[КОНТЕКСТ: Сегодня Маша уже съела на ${diaryData.calories} ккал. Б: ${diaryData.protein}г, Ж: ${diaryData.fat}г, У: ${diaryData.carbs}г]`
+        : ''
+
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: messages.map((m) => ({ role: m.role, content: m.content })),
+          messages: messages.map((m) => ({ 
+            role: m.role, 
+            content: m.content 
+          })),
+          diaryContext,
         }),
       })
 
@@ -50,7 +113,11 @@ export default function ChatPage() {
       if (response.ok && data.data) {
         setMessages((prev) => [
           ...prev,
-          { role: 'assistant', content: data.data },
+          { 
+            role: 'assistant', 
+            content: data.data,
+            timestamp: Date.now()
+          },
         ])
       } else {
         setMessages((prev) => [
@@ -58,6 +125,7 @@ export default function ChatPage() {
           {
             role: 'assistant',
             content: `Ошибка: ${data.error || 'Что-то пошло не так 😅'}`,
+            timestamp: Date.now(),
           },
         ])
       }
@@ -68,6 +136,7 @@ export default function ChatPage() {
         {
           role: 'assistant',
           content: 'Ошибка соединения. Проверь интернет и попробуй снова 💕',
+          timestamp: Date.now(),
         },
       ])
     } finally {
@@ -82,26 +151,74 @@ export default function ChatPage() {
     }
   }
 
+  function clearChat() {
+    if (confirm('Очистить историю чата?')) {
+      setMessages([
+        {
+          role: 'assistant',
+          content: 'Привет, Маша! Я твой AI-помощник FitMate! 💕\n\nЧем могу помочь сегодня?',
+          timestamp: Date.now(),
+        },
+      ])
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-100 flex flex-col">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-rose-100">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link
-            href="/"
-            className="p-2 hover:bg-rose-100 rounded-xl transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6 text-rose-600" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-rose-500" />
-            <h1 className="text-xl font-bold text-gray-800">AI Помощник</h1>
+        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/"
+              className="p-2 hover:bg-rose-100 rounded-xl transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6 text-rose-600" />
+            </Link>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-rose-500" />
+              <h1 className="text-xl font-bold text-gray-800">AI Помощник</h1>
+            </div>
           </div>
+          <button
+            onClick={clearChat}
+            className="p-2 text-xs text-gray-500 hover:text-rose-600 transition-colors"
+          >
+            Очистить
+          </button>
         </div>
       </header>
 
       {/* Messages */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 overflow-hidden flex flex-col">
+        {/* Diary Context */}
+        {diaryData && diaryData.calories > 0 && (
+          <div className="bg-white rounded-2xl p-4 shadow-md shadow-rose-100 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Utensils className="w-4 h-4 text-rose-500" />
+              <p className="text-sm font-medium text-gray-700">Сегодня съедено:</p>
+            </div>
+            <div className="grid grid-cols-4 gap-2 text-center">
+              <div>
+                <p className="text-lg font-bold text-rose-600">{diaryData.calories}</p>
+                <p className="text-xs text-gray-500">ккал</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-blue-600">{diaryData.protein}</p>
+                <p className="text-xs text-gray-500">белки</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-yellow-600">{diaryData.fat}</p>
+                <p className="text-xs text-gray-500">жиры</p>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-green-600">{diaryData.carbs}</p>
+                <p className="text-xs text-gray-500">углеводы</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">
           {messages.map((message, index) => (
             <div
@@ -118,6 +235,14 @@ export default function ChatPage() {
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className={`text-xs mt-1 ${
+                  message.role === 'user' ? 'text-rose-200' : 'text-gray-400'
+                }`}>
+                  {new Date(message.timestamp).toLocaleTimeString('ru-RU', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </p>
               </div>
             </div>
           ))}
@@ -148,7 +273,7 @@ export default function ChatPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Спроси о питании, тренировках или просто поболтаем... 💕"
+              placeholder="Напиши, что съела, или задай вопрос... 💕"
               className="flex-1 resize-none bg-transparent px-3 py-2 text-sm focus:outline-none max-h-32 min-h-[44px]"
               rows={1}
             />

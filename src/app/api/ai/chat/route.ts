@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { messages } = body
+    const { messages, diaryContext } = body
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -33,8 +33,11 @@ export async function POST(request: NextRequest) {
 Твоя задача: поддерживать, отвечать на вопросы о питании и тренировках, давать советы.
 Будь позитивным, мотивируй, используй эмодзи.
 Не давай медицинских рекомендаций.
-Отвечай на русском языке.`,
+Отвечай на русском языке.
+
+Если Маша пишет что съела (например: "запиши обед", "съела салат"), предложи записать это в дневник питания.`,
         },
+        ...(diaryContext ? [{ role: 'system', content: diaryContext }] : []),
         ...messages,
       ],
     })
