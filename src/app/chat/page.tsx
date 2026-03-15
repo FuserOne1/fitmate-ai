@@ -19,8 +19,20 @@ type DiaryData = { calories: number; protein: number; fat: number; carbs: number
 
 function renderMarkdown(text: string) {
   if (!text) return null
-  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g)
+  
+  // Разбиваем на блоки кода и остальной текст
+  const parts = text.split(/(```(?:json)?\s*[\s\S]*?```|\*\*.*?\*\*|\*.*?\*|`.*?`)/g)
+  
   return parts.map((part, index) => {
+    // Блок кода ``` ... ```
+    if (part.startsWith('```')) {
+      const codeContent = part.replace(/```(?:json)?\s*/, '').replace(/```$/, '').trim()
+      return (
+        <pre key={index} className="bg-[hsl(var(--muted))] p-2 rounded-lg text-xs overflow-x-auto my-2">
+          <code>{codeContent}</code>
+        </pre>
+      )
+    }
     if (part.startsWith('**') && part.endsWith('**')) return <strong key={index}>{part.slice(2, -2)}</strong>
     if (part.startsWith('*') && part.endsWith('*')) return <em key={index}>{part.slice(1, -1)}</em>
     if (part.startsWith('`') && part.endsWith('`')) return <code key={index}>{part.slice(1, -1)}</code>
@@ -150,11 +162,15 @@ export default function ChatPage() {
       }
       
       const data = await response.json()
+      console.log('AI response data:', data)
 
       if (data.success && data.data) {
+        console.log('Raw data.data:', data.data)
         // Очищаем от markdown-обертки (```json ... ```)
         let jsonStr = data.data
-        const markdownMatch = data.data.match(/```(?:json)?\s*([\s\S]*?)```/)
+        // Пробуем разные варианты regex для markdown блоков
+        const markdownMatch = data.data.match(/```(?:json)?\s*([\s\S]*?)```/) || 
+                              data.data.match(/```\s*([\s\S]*?)```/)
         if (markdownMatch) {
           jsonStr = markdownMatch[1].trim()
         } else {
@@ -166,17 +182,37 @@ export default function ChatPage() {
           }
         }
 
-        const parsed = JSON.parse(jsonStr)
-        const foodEntry = { items: parsed.items || [], total: parsed.total || { calories: 0, protein: 0, fat: 0, carbs: 0 } }
-        setPendingFoodEntry(foodEntry)
-        setMessages(prev => [...prev, { role: 'assistant', content: `📸 ${parsed.comment || 'Вот что я нашёл:'}`, timestamp: Date.now(), foodEntry }])
+        try {
+          const parsed = JSON.parse(jsonStr)
+          const foodEntry = { items: parsed.items || [], total: parsed.total || { calories: 0, protein: 0, fat: 0, carbs: 0 } }
+          setPendingFoodEntry(foodEntry)
+          setMessages(prev => [...prev, { role: 'assistant', content: `📸 ${parsed.comment || 'Вот что я нашёл:'}`, timestamp: Date.now(), foodEntry }])
+        } catch (parseError: any) {
+          console.error('JSON parse error:', parseError, 'jsonStr:', jsonStr)
+          // Выводим ошибку в чат вместо alert
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: `😕 Не удалось распознать фото\n\n${parseError.message || 'Попробуй другое фото'}`, 
+            timestamp: Date.now() 
+          }])
+        }
       } else {
         console.error('Analysis failed:', data)
-        alert(`Не удалось распознать 😅\n\n${data.error || 'Попробуй другое фото'}`)
+        // Выводим ошибку в чат вместо alert
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `😕 Не удалось распознать фото\n\n${data.error || 'Попробуй другое фото'}`, 
+          timestamp: Date.now() 
+        }])
       }
     } catch (error: any) {
       console.error('Image analysis error:', error)
-      alert(`Ошибка: ${error.message || 'Попробуй ещё раз'}`)
+      // Выводим ошибку в чат вместо alert
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: `😕 Ошибка анализа\n\n${error.message || 'Попробуй ещё раз'}`, 
+        timestamp: Date.now() 
+      }])
     } finally {
       setAnalyzingImage(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
