@@ -60,20 +60,34 @@ export default function DiaryPage() {
   const [parsedItems, setParsedItems] = useState<FoodItem[]>([])
   const [showConfirm, setShowConfirm] = useState(false)
   const [logs, setLogs] = useState<DailyLog[]>([])
-  const [selectedDate, setSelectedDate] = useState(() => getMoscowDate())
+  const [selectedDate, setSelectedDate] = useState(() => {
+    try {
+      return getMoscowDate()
+    } catch (e) {
+      console.error('Error getting Moscow date:', e)
+      return new Date().toISOString().split('T')[0]
+    }
+  })
+
+  console.log('Diary render - selectedDate:', selectedDate, 'logs:', logs)
 
   // Загрузка из localStorage при первом рендере
   useEffect(() => {
+    console.log('Diary useEffect - loading from localStorage')
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('fitmate-diary')
-      if (saved) {
-        try {
+      try {
+        const saved = localStorage.getItem('fitmate-diary')
+        console.log('Raw saved data:', saved)
+        
+        if (saved) {
           const parsedLogs = JSON.parse(saved)
-          
+          console.log('Parsed logs:', parsedLogs)
+
           // Проверяем, есть ли запись за сегодня
           const today = getMoscowDate()
+          console.log('Today:', today)
           const todayLog = parsedLogs.find((log: DailyLog) => log.date === today)
-          
+
           if (!todayLog) {
             // Добавляем запись за сегодня
             parsedLogs.unshift({
@@ -82,31 +96,33 @@ export default function DiaryPage() {
               total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
             })
           }
-          
+
           // Фильтруем только корректные записи
           const validLogs = parsedLogs.filter((log: DailyLog) => {
-            return log.date && /^\d{4}-\d{2}-\d{2}$/.test(log.date)
+            const isValid = log.date && /^\d{4}-\d{2}-\d{2}$/.test(log.date)
+            console.log('Log date:', log.date, 'valid:', isValid)
+            return isValid
           })
-          
+
+          console.log('Setting valid logs:', validLogs)
           setLogs(validLogs)
-        } catch (e) {
-          console.error('Failed to parse diary:', e)
-          setLogs([
-            {
-              date: getMoscowDate(),
-              items: [],
-              total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-            },
-          ])
-        }
-      } else {
-        setLogs([
-          {
+        } else {
+          const defaultLog = {
             date: getMoscowDate(),
             items: [],
             total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
-          },
-        ])
+          }
+          console.log('No saved data, using default:', defaultLog)
+          setLogs([defaultLog])
+        }
+      } catch (e) {
+        console.error('Failed to parse diary:', e)
+        const fallbackLog = {
+          date: getMoscowDate(),
+          items: [],
+          total: { calories: 0, protein: 0, fat: 0, carbs: 0 },
+        }
+        setLogs([fallbackLog])
       }
     }
   }, [])

@@ -2,11 +2,12 @@
   "name": "FitMate AI - Твой помощник для похудения",
   "short_name": "FitMate",
   "description": "AI-помощник для похудения с анализом еды по фото, трекингом воды и умными рекомендациями",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "background_color": "#fff1f2",
   "theme_color": "#f43f5e",
   "orientation": "portrait-primary",
+  "version": "1.0.1",
   "icons": [
     {
       "src": "/icons/icon-192.svg",
