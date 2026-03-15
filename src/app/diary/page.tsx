@@ -33,21 +33,25 @@ function getMoscowDate(): string {
 
 // Получение текущей даты для отображения
 function getDisplayDate(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00')
-  const today = new Date()
-  const moscowToday = new Date(today.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))
-  
-  if (dateStr === getMoscowDate()) {
-    return 'Сегодня'
+  try {
+    const date = new Date(dateStr + 'T00:00:00')
+    const today = new Date()
+    const moscowToday = new Date(today.toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' }))
+    
+    if (dateStr === getMoscowDate()) {
+      return 'Сегодня'
+    }
+    
+    const yesterday = new Date(moscowToday)
+    yesterday.setDate(yesterday.getDate() - 1)
+    if (dateStr === yesterday.toISOString().split('T')[0]) {
+      return 'Вчера'
+    }
+    
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+  } catch (e) {
+    return dateStr
   }
-  
-  const yesterday = new Date(moscowToday)
-  yesterday.setDate(yesterday.getDate() - 1)
-  if (dateStr === yesterday.toISOString().split('T')[0]) {
-    return 'Вчера'
-  }
-  
-  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
 }
 
 export default function DiaryPage() {
@@ -56,7 +60,7 @@ export default function DiaryPage() {
   const [parsedItems, setParsedItems] = useState<FoodItem[]>([])
   const [showConfirm, setShowConfirm] = useState(false)
   const [logs, setLogs] = useState<DailyLog[]>([])
-  const [selectedDate, setSelectedDate] = useState(getMoscowDate())
+  const [selectedDate, setSelectedDate] = useState(() => getMoscowDate())
 
   // Загрузка из localStorage при первом рендере
   useEffect(() => {
@@ -79,7 +83,12 @@ export default function DiaryPage() {
             })
           }
           
-          setLogs(parsedLogs)
+          // Фильтруем только корректные записи
+          const validLogs = parsedLogs.filter((log: DailyLog) => {
+            return log.date && /^\d{4}-\d{2}-\d{2}$/.test(log.date)
+          })
+          
+          setLogs(validLogs)
         } catch (e) {
           console.error('Failed to parse diary:', e)
           setLogs([
