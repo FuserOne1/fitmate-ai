@@ -74,6 +74,36 @@ function cleanContent(content: string) {
   return content.replace(/\[FOOD_ENTRY\][\s\S]*?\[\/FOOD_ENTRY\]/g, '').trim()
 }
 
+// Сжатие изображения
+async function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target?.result as string
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+        
+        // Максимальная ширина 1024px
+        if (width > 1024) {
+          height = (height * 1024) / width
+          width = 1024
+        }
+        
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx?.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL('image/jpeg', 0.8))
+      }
+      reader.onerror = (error) => reject(error)
+    }
+  })
+}
+
 export default function ChatPage() {
   const { themeConfig } = useTheme()
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -95,7 +125,10 @@ export default function ChatPage() {
   const [pendingFoodEntry, setPendingFoodEntry] = useState<Message['foodEntry'] | null>(null)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [analyzingImage, setAnalyzingImage] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -273,6 +306,67 @@ export default function ChatPage() {
     })
     
     alert('✅ Добавлено в дневник!')
+  }
+
+  async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    try {
+      setAnalyzingImage(true)
+      
+      // Сжимаем изображение
+      const compressed = await compressImage(file)
+      
+      // Отправляем на анализ
+      const response = await fetch('/api/ai/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'image',
+          imageUrl: compressed,
+          prompt: 'Проанализируй это фото еды. Определи что на фото, примерный вес порции и посчитай калории + БЖУ. Верни ответ в формате JSON с полями: items (массив продуктов), total (общие калории и БЖУ), comment (комментарий).',
+        }),
+      })
+      
+      const data = await response.json()
+      
+      if (data.success && data.data) {
+        // Парсим результат и создаём food entry
+        try {
+          const parsed = JSON.parse(data.data)
+          const foodEntry = {
+            items: parsed.items || [],
+            total: parsed.total || { calories: 0, protein: 0, fat: 0, carbs: 0 },
+          }
+          setPendingFoodEntry(foodEntry)
+          
+          // Добавляем сообщение с фото
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `📸 Я проанализировал твоё фото!\n\n${parsed.comment || 'Вот что я нашёл:'}`,
+            timestamp: Date.now(),
+            foodEntry,
+          }])
+        } catch (parseError) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: data.data,
+            timestamp: Date.now(),
+          }])
+        }
+      } else {
+        alert('Не удалось распознать еду 😅 Попробуй ещё раз!')
+      }
+    } catch (error) {
+      console.error('Image analysis error:', error)
+      alert('Ошибка при анализе фото')
+    } finally {
+      setAnalyzingImage(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
   }
 
   return (
