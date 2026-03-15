@@ -150,15 +150,22 @@ export default function ChatPage() {
       }
       
       const data = await response.json()
-      
+
       if (data.success && data.data) {
-        // Очищаем от markdown если есть
+        // Очищаем от markdown-обертки (```json ... ```)
         let jsonStr = data.data
         const markdownMatch = data.data.match(/```(?:json)?\s*([\s\S]*?)```/)
         if (markdownMatch) {
           jsonStr = markdownMatch[1].trim()
+        } else {
+          // Если нет markdown-обертки, пробуем найти JSON по первой { и последней }
+          const firstBrace = data.data.indexOf('{')
+          const lastBrace = data.data.lastIndexOf('}')
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            jsonStr = data.data.slice(firstBrace, lastBrace + 1)
+          }
         }
-        
+
         const parsed = JSON.parse(jsonStr)
         const foodEntry = { items: parsed.items || [], total: parsed.total || { calories: 0, protein: 0, fat: 0, carbs: 0 } }
         setPendingFoodEntry(foodEntry)
