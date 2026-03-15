@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Utensils, Droplets, Scale, MessageCircle, User, Settings, Heart } from 'lucide-react'
+import { Utensils, Droplets, Scale, MessageCircle, Heart } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 
 // Милые фразы от Сережи
@@ -46,7 +46,7 @@ export default function HomePage() {
           }
         } catch {}
       }
-      
+
       // Вода (ищем за сегодня)
       const waterSaved = localStorage.getItem('fitmate-water')
       if (waterSaved) {
@@ -59,7 +59,7 @@ export default function HomePage() {
           }
         } catch {}
       }
-      
+
       // Вес (последняя запись)
       const weightSaved = localStorage.getItem('fitmate-weight')
       if (weightSaved) {
@@ -75,49 +75,43 @@ export default function HomePage() {
         } catch {}
       }
     }
-    
+
     loadAllData()
-    
+
     // Слушаем изменения в localStorage
     const handleStorageChange = (e: StorageEvent) => {
       if (['fitmate-diary', 'fitmate-water', 'fitmate-weight'].includes(e.key || '')) {
         loadAllData()
       }
     }
-    
+
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
+
   return (
     <div className={`min-h-screen ${themeConfig.colors.bg} transition-colors duration-300`}>
-      {/* Header */}
+      {/* Header с романтическим футером */}
       <header className="sticky top-0 z-50 bg-[hsl(var(--bg-secondary))]/80 backdrop-blur-lg border-b border-[hsl(var(--border))]">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-[hsl(var(--primary))] to-pink-500 bg-clip-text text-transparent">
-            FitMate AI 🌸
-          </h1>
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-[hsl(var(--primary))] to-pink-500 bg-clip-text text-transparent">
+              FitMate AI 🌸
+            </h1>
+          </div>
+          {/* Романтическое послание от Сережи */}
+          <div className="bg-gradient-to-r from-[hsl(var(--primary))]/10 to-pink-500/10 rounded-2xl p-4 border border-[hsl(var(--primary))]/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Heart className="w-4 h-4 [color:hsl(var(--primary))]" />
+              <p className="text-xs [color:hsl(var(--primary))] font-medium">От Сережи с любовью ❤️</p>
+            </div>
+            <p className="text-[hsl(var(--text-primary))] font-medium italic text-center">"{phrase}"</p>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* Приветствие */}
-        <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg mb-6 animate-fade-in border border-[hsl(var(--border))]">
-          <h2 className="text-2xl font-bold text-[hsl(var(--text-primary))] mb-2">
-            Привет! 👋
-          </h2>
-          <p className="text-[hsl(var(--text-secondary))] mb-4">
-            Твой умный помощник для похудения
-          </p>
-          <div className="bg-[hsl(var(--muted))] rounded-2xl p-4 border border-[hsl(var(--border))]">
-            <div className="flex items-center gap-2 mb-2">
-              <Heart className="w-4 h-4 [color:hsl(var(--primary))]" />
-              <p className="text-xs [color:hsl(var(--primary))] font-medium">От Сережи с любовью</p>
-            </div>
-            <p className="text-[hsl(var(--text-primary))] font-medium italic">"{phrase}"</p>
-          </div>
-        </div>
-
         {/* Быстрые действия */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <Link href="/diary" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))]">
@@ -154,7 +148,7 @@ export default function HomePage() {
         </div>
 
         {/* Статистика за день */}
-        <div className="space-y-4 mb-6">
+        <div className="space-y-4">
           {/* КБЖУ */}
           <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))]">
             <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4 flex items-center gap-2">
@@ -198,9 +192,6 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-            <div className="mt-3 text-center text-sm text-[hsl(var(--text-secondary))]">
-              Нажми для записи →
-            </div>
           </Link>
 
           {/* Вес */}
@@ -233,31 +224,9 @@ export default function HomePage() {
             ) : (
               <div className="text-center p-4 bg-[hsl(var(--muted))] rounded-2xl">
                 <div className="text-sm text-[hsl(var(--text-secondary))]">Вес ещё не записан</div>
-                <div className="text-sm text-[hsl(var(--primary))] hover:underline mt-2 inline-block">
-                  Записать вес →
-                </div>
               </div>
             )}
           </Link>
-        </div>
-
-        {/* Настройки */}
-        <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))]">
-          <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] mb-4">⚙️ Настройки</h3>
-          <div className="space-y-3">
-            <Link href="/settings/profile" className="flex items-center p-3 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors">
-              <User className={`w-5 h-5 ${themeConfig.colors.primaryText} mr-3`} />
-              <span className="font-medium text-[hsl(var(--text-primary))]">Профиль</span>
-            </Link>
-            <Link href="/settings/reminders" className="flex items-center p-3 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors">
-              <span className="text-xl mr-3">🔔</span>
-              <span className="font-medium text-[hsl(var(--text-primary))]">Напоминания</span>
-            </Link>
-            <Link href="/settings/theme" className="flex items-center p-3 rounded-xl hover:bg-[hsl(var(--muted))] transition-colors">
-              <span className="text-xl mr-3">🎨</span>
-              <span className="font-medium text-[hsl(var(--text-primary))]">Тема</span>
-            </Link>
-          </div>
         </div>
       </main>
 
