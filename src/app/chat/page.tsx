@@ -195,14 +195,14 @@ export default function ChatPage() {
             }])
           } else if (newItems.length < foodEntry.items.length) {
             // Часть продуктов уже записана
-            const partialEntry = { 
-              ...foodEntry, 
+            const partialEntry = {
+              ...foodEntry,
               items: newItems,
               total: {
-                calories: newItems.reduce((sum, i) => sum + i.calories, 0),
-                protein: newItems.reduce((sum, i) => sum + i.protein, 0),
-                fat: newItems.reduce((sum, i) => sum + i.fat, 0),
-                carbs: newItems.reduce((sum, i) => sum + i.carbs, 0)
+                calories: newItems.reduce((sum: number, i: {calories: number}) => sum + i.calories, 0),
+                protein: newItems.reduce((sum: number, i: {protein: number}) => sum + i.protein, 0),
+                fat: newItems.reduce((sum: number, i: {fat: number}) => sum + i.fat, 0),
+                carbs: newItems.reduce((sum: number, i: {carbs: number}) => sum + i.carbs, 0)
               }
             }
             setMessages(prev => [...prev, { 
@@ -306,14 +306,14 @@ export default function ChatPage() {
             }])
           } else if (newItems.length < foodEntry.items.length) {
             // Часть продуктов уже записана
-            const partialEntry = { 
-              ...foodEntry, 
+            const partialEntry = {
+              ...foodEntry,
               items: newItems,
               total: {
-                calories: newItems.reduce((sum, i) => sum + i.calories, 0),
-                protein: newItems.reduce((sum, i) => sum + i.protein, 0),
-                fat: newItems.reduce((sum, i) => sum + i.fat, 0),
-                carbs: newItems.reduce((sum, i) => sum + i.carbs, 0)
+                calories: newItems.reduce((sum: number, i: {calories: number}) => sum + i.calories, 0),
+                protein: newItems.reduce((sum: number, i: {protein: number}) => sum + i.protein, 0),
+                fat: newItems.reduce((sum: number, i: {fat: number}) => sum + i.fat, 0),
+                carbs: newItems.reduce((sum: number, i: {carbs: number}) => sum + i.carbs, 0)
               }
             }
             setMessages(prev => [...prev, { 
