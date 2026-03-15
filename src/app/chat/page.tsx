@@ -152,7 +152,14 @@ export default function ChatPage() {
       const data = await response.json()
       
       if (data.success && data.data) {
-        const parsed = JSON.parse(data.data)
+        // Очищаем от markdown если есть
+        let jsonStr = data.data
+        const markdownMatch = data.data.match(/```(?:json)?\s*([\s\S]*?)```/)
+        if (markdownMatch) {
+          jsonStr = markdownMatch[1].trim()
+        }
+        
+        const parsed = JSON.parse(jsonStr)
         const foodEntry = { items: parsed.items || [], total: parsed.total || { calories: 0, protein: 0, fat: 0, carbs: 0 } }
         setPendingFoodEntry(foodEntry)
         setMessages(prev => [...prev, { role: 'assistant', content: `📸 ${parsed.comment || 'Вот что я нашёл:'}`, timestamp: Date.now(), foodEntry }])
