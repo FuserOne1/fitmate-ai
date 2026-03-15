@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { analyzeImage, chatWithAI, SYSTEM_PROMPTS } from '@/lib/ai/openrouter'
+import { analyzeImage, chatWithAI } from '@/lib/ai/openrouter'
 
 // POST /api/ai/analyze
 export async function POST(request: NextRequest) {
@@ -9,12 +9,12 @@ export async function POST(request: NextRequest) {
 
     // Анализ изображения
     if (type === 'image' && imageUrl) {
-      let systemPrompt = SYSTEM_PROMPTS.FOOD_ANALYSIS
+      let systemPrompt = `Ты - эксперт по питанию. Проанализируй фото еды и предоставь информацию о калориях и БЖУ в формате JSON.`
 
       if (prompt?.includes('весы') || prompt?.includes('скриншот')) {
-        systemPrompt = SYSTEM_PROMPTS.SCALE_ANALYSIS
+        systemPrompt = `Ты - ассистент для фитнеса. Проанализируй скриншот с умных весов и извлеки данные: вес, процент жира, мышц, воды. Ответ в формате JSON.`
       } else if (prompt?.includes('тело') || prompt?.includes('фото')) {
-        systemPrompt = SYSTEM_PROMPTS.BODY_ANALYSIS
+        systemPrompt = `Ты - фитнес-тренер. Проанализируй фото тела и дай оценку прогресса.`
       }
 
       const result = await analyzeImage({
@@ -36,7 +36,10 @@ export async function POST(request: NextRequest) {
     if (type === 'chat' && messages) {
       const result = await chatWithAI({
         messages: [
-          { role: 'system', content: SYSTEM_PROMPTS.CHAT_ASSISTANT },
+          {
+            role: 'system',
+            content: `Ты - дружелюбный AI-помощник для похудения FitMate. Будь позитивным, мотивируй, общайся на русском.`,
+          },
           ...messages,
         ],
       })
