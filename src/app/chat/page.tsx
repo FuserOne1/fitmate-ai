@@ -17,6 +17,27 @@ type DiaryData = {
   carbs: number
 } | null
 
+// Простой markdown рендерер
+function renderMarkdown(text: string) {
+  if (!text) return null
+  
+  // Разбиваем на части и рендерим
+  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g)
+  
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={index} className="font-bold">{part.slice(2, -2)}</strong>
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return <em key={index} className="italic">{part.slice(1, -1)}</em>
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return <code key={index} className="bg-[hsl(var(--muted))] px-1 rounded">{part.slice(1, -1)}</code>
+    }
+    return part
+  })
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== 'undefined') {
@@ -202,7 +223,9 @@ export default function ChatPage() {
                   ? 'bg-[hsl(var(--primary))] text-white rounded-br-md'
                   : 'bg-[hsl(var(--card))] text-[hsl(var(--text-primary))] shadow-md border border-[hsl(var(--border))] rounded-bl-md'
               }`}>
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                  {message.role === 'assistant' ? renderMarkdown(message.content) : message.content}
+                </p>
                 <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-white/70' : 'text-[hsl(var(--text-secondary))]'}`}>
                   {new Date(message.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                 </p>
