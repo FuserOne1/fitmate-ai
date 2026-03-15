@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Send, Sparkles, Utensils } from 'lucide-react'
-import { useTheme } from '@/lib/theme'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -19,7 +18,6 @@ type DiaryData = {
 } | null
 
 export default function ChatPage() {
-  const { themeConfig } = useTheme()
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('fitmate-chat')
@@ -122,15 +120,15 @@ export default function ChatPage() {
   }
 
   return (
-    <div className={`min-h-screen ${themeConfig.colors.bg} transition-colors duration-300`}>
+    <div className="min-h-screen bg-[hsl(var(--bg-primary))] transition-colors duration-300">
       <header className="sticky top-0 z-50 bg-[hsl(var(--bg-secondary))]/80 backdrop-blur-lg border-b border-[hsl(var(--border))]">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="p-2 hover:bg-[hsl(var(--muted))] rounded-xl transition-colors">
-              <ArrowLeft className={`w-6 h-6 ${themeConfig.colors.primaryText}`} />
+              <ArrowLeft className="w-6 h-6 text-[hsl(var(--primary))]" />
             </Link>
             <div className="flex items-center gap-2">
-              <Sparkles className={`w-6 h-6 ${themeConfig.colors.primaryText}`} />
+              <Sparkles className="w-6 h-6 text-[hsl(var(--primary))]" />
               <h1 className="text-xl font-bold text-[hsl(var(--text-primary))]">AI Помощник</h1>
             </div>
           </div>
@@ -144,12 +142,12 @@ export default function ChatPage() {
         {diaryData && diaryData.calories > 0 && (
           <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-md border border-[hsl(var(--border))] mb-4">
             <div className="flex items-center gap-2 mb-2">
-              <Utensils className={`w-4 h-4 ${themeConfig.colors.primaryText}`} />
+              <Utensils className="w-4 h-4 text-[hsl(var(--primary))]" />
               <p className="text-sm font-medium text-[hsl(var(--text-primary))]">Сегодня съедено:</p>
             </div>
             <div className="grid grid-cols-4 gap-2 text-center">
               <div>
-                <p className={`text-lg font-bold ${themeConfig.colors.primaryText}`}>{diaryData.calories}</p>
+                <p className="text-lg font-bold text-[hsl(var(--primary))]">{diaryData.calories}</p>
                 <p className="text-xs text-[hsl(var(--text-secondary))]">ккал</p>
               </div>
               <div>
@@ -173,7 +171,7 @@ export default function ChatPage() {
             <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                 message.role === 'user'
-                  ? `${themeConfig.colors.primaryBg} text-white rounded-br-md`
+                  ? 'bg-[hsl(var(--primary))] text-white rounded-br-md'
                   : 'bg-[hsl(var(--card))] text-[hsl(var(--text-primary))] shadow-md border border-[hsl(var(--border))] rounded-bl-md'
               }`}>
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -187,9 +185,9 @@ export default function ChatPage() {
             <div className="flex justify-start">
               <div className="bg-[hsl(var(--card))] rounded-2xl px-4 py-3 shadow-md border border-[hsl(var(--border))]">
                 <div className="flex gap-1">
-                  <div className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`} />
-                  <div className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`} style={{ animationDelay: '0.1s' }} />
-                  <div className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`} style={{ animationDelay: '0.2s' }} />
+                  <div className="w-2 h-2 bg-[hsl(var(--primary))] rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-[hsl(var(--primary))] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                  <div className="w-2 h-2 bg-[hsl(var(--primary))] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                 </div>
               </div>
             </div>
@@ -210,7 +208,7 @@ export default function ChatPage() {
             <button
               onClick={sendMessage}
               disabled={loading || !input.trim()}
-              className={`p-3 ${themeConfig.colors.primaryBg} text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
+              className="p-3 bg-[hsl(var(--primary))] text-white rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Send className="w-5 h-5" />
             </button>
