@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Send, Sparkles, Utensils, Trash2 } from 'lucide-react'
+import { ArrowLeft, Send, Sparkles, Utensils, Trash2, Image } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 
 type Message = {
@@ -122,23 +122,51 @@ export default function ChatPage() {
   async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    
+    // Проверка формата
+    if (!file.type.startsWith('image/')) {
+      alert('Пожалуйста, выбери изображение (JPG, PNG, HEIC)')
+      return
+    }
+    
     try {
       setAnalyzingImage(true)
       const compressed = await compressImage(file)
+      
       const response = await fetch('/api/ai/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'image', imageUrl: compressed, prompt: 'Проанализируй фото еды. Верни JSON: {items:[{name,calories,protein,fat,carbs,weight}], total:{calories,protein,fat,carbs}, comment}' }),
+        body: JSON.stringify({ 
+          type: 'image', 
+          imageUrl: compressed, 
+          prompt: 'Ты эксперт по питанию. Проанализируй фото еды. Определи блюда, примерный вес и КБЖУ. Верни ТОЛЬКО JSON: {"items":[{"name":"название","calories":число,"protein":число,"fat":число,"carbs":число,"weight":число}],"total":{"calories":число,"protein":число,"fat":число,"carbs":число},"comment":"краткий комментарий на русском"}' 
+        }),
       })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Error:', response.status, errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+      
       const data = await response.json()
+      
       if (data.success && data.data) {
         const parsed = JSON.parse(data.data)
         const foodEntry = { items: parsed.items || [], total: parsed.total || { calories: 0, protein: 0, fat: 0, carbs: 0 } }
         setPendingFoodEntry(foodEntry)
         setMessages(prev => [...prev, { role: 'assistant', content: `📸 ${parsed.comment || 'Вот что я нашёл:'}`, timestamp: Date.now(), foodEntry }])
-      } else { alert('Не удалось распознать 😅') }
-    } catch { alert('Ошибка при анализе') }
-    finally { setAnalyzingImage(false); if (fileInputRef.current) fileInputRef.current.value = '' }
+      } else {
+        console.error('Analysis failed:', data)
+        alert(`Не удалось распознать 😅\n\n${data.error || 'Попробуй другое фото'}`)
+      }
+    } catch (error: any) {
+      console.error('Image analysis error:', error)
+      alert(`Ошибка: ${error.message || 'Попробуй ещё раз'}`)
+    } finally {
+      setAnalyzingImage(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   function addFoodToDiary() {
@@ -218,7 +246,7 @@ export default function ChatPage() {
           <div className="flex items-end gap-2">
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
             <button onClick={() => fileInputRef.current?.click()} disabled={analyzingImage} className="p-3 bg-[hsl(var(--muted))] text-[hsl(var(--primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 disabled:opacity-50">
-              {analyzingImage ? <div className="w-5 h-5 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" /> : <span className="text-xl">📷</span>}
+              {analyzingImage ? <div className="w-5 h-5 border-2 border-[hsl(var(--primary))] border-t-transparent rounded-full animate-spin" /> : <Image className="w-5 h-5" />}
             </button>
             <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={handleKeyPress} placeholder="Напиши, что съела... 💕" className="flex-1 resize-none bg-transparent px-3 py-2 text-sm focus:outline-none max-h-32 min-h-[44px]" rows={1} />
             <button onClick={sendMessage} disabled={loading || !input.trim()} className="p-3 bg-[hsl(var(--primary))] text-white rounded-xl hover:opacity-90 disabled:opacity-50"><Send className="w-5 h-5" /></button>
