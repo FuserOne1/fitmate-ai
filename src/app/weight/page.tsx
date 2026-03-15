@@ -40,7 +40,7 @@ export default function WeightPage() {
 
   const handleSave = () => {
     if (!weight) return
-    
+
     const today = getMoscowDate()
     const newLog: WeightLog = {
       date: today,
@@ -48,26 +48,59 @@ export default function WeightPage() {
       fatPercent: fatPercent ? parseFloat(fatPercent) : undefined,
       muscleMass: muscleMass ? parseFloat(muscleMass) : undefined
     }
-    
-    const updatedLogs = logs.filter(log => log.date !== today)
+
+    // Загружаем актуальные данные из localStorage
+    const saved = localStorage.getItem('fitmate-weight')
+    let currentLogs: WeightLog[] = []
+    if (saved) {
+      try {
+        currentLogs = JSON.parse(saved)
+      } catch {}
+    }
+
+    // Удаляем запись за сегодня если есть
+    const updatedLogs = currentLogs.filter(log => log.date !== today)
     updatedLogs.unshift(newLog)
     updatedLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    
+
     setLogs(updatedLogs)
     localStorage.setItem('fitmate-weight', JSON.stringify(updatedLogs))
     window.dispatchEvent(new Event('storage'))
-    
+
     // Очистка
     setWeight('')
     setFatPercent('')
     setMuscleMass('')
-    
-    alert('✅ Вес записан!')
+
+    // Показываем сравнение если есть предыдущая запись
+    if (currentLogs.length > 0) {
+      const prevLog = currentLogs[0]
+      const weightDiff = newLog.weight - prevLog.weight
+      let message = `✅ Вес записан!\n\n📊 Прогресс:\nВес: ${weightDiff >= 0 ? '+' : ''}${weightDiff.toFixed(1)} кг`
+      if (prevLog.fatPercent && newLog.fatPercent) {
+        const fatDiff = newLog.fatPercent - prevLog.fatPercent
+        message += `\nЖир: ${fatDiff >= 0 ? '+' : ''}${fatDiff.toFixed(1)}%`
+      }
+      if (prevLog.muscleMass && newLog.muscleMass) {
+        const muscleDiff = newLog.muscleMass - prevLog.muscleMass
+        message += `\nМышцы: ${muscleDiff >= 0 ? '+' : ''}${muscleDiff.toFixed(1)} кг`
+      }
+      alert(message)
+    } else {
+      alert('✅ Вес записан! Это первая запись.')
+    }
   }
 
   const handleDelete = (date: string) => {
     if (confirm('Удалить эту запись?')) {
-      const updatedLogs = logs.filter(log => log.date !== date)
+      const saved = localStorage.getItem('fitmate-weight')
+      let currentLogs: WeightLog[] = []
+      if (saved) {
+        try {
+          currentLogs = JSON.parse(saved)
+        } catch {}
+      }
+      const updatedLogs = currentLogs.filter(log => log.date !== date)
       setLogs(updatedLogs)
       localStorage.setItem('fitmate-weight', JSON.stringify(updatedLogs))
       window.dispatchEvent(new Event('storage'))
@@ -76,20 +109,36 @@ export default function WeightPage() {
 
   const latestLog = logs[0]
   const previousLog = logs[1]
-  
+
   // Расчет изменений
   const weightChange = previousLog ? latestLog.weight - previousLog.weight : 0
-  const fatChange = previousLog && previousLog.fatPercent && latestLog.fatPercent 
-    ? latestLog.fatPercent - previousLog.fatPercent 
+  const fatChange = previousLog && previousLog.fatPercent && latestLog.fatPercent
+    ? latestLog.fatPercent - previousLog.fatPercent
     : 0
-  const muscleChange = previousLog && previousLog.muscleMass && latestLog.muscleMass 
-    ? latestLog.muscleMass - previousLog.muscleMass 
+  const muscleChange = previousLog && previousLog.muscleMass && latestLog.muscleMass
+    ? latestLog.muscleMass - previousLog.muscleMass
     : 0
 
-  const getTrendIcon = (change: number) => {
-    if (change > 0) return <TrendingUp className="w-4 h-4 text-red-500" />
-    if (change < 0) return <TrendingDown className="w-4 h-4 text-green-500" />
-    return <Minus className="w-4 h-4 text-gray-500" />
+  // Отладка
+  useEffect(() => {
+    console.log('📊 Weight logs:', logs)
+    console.log('📊 Latest:', latestLog, 'Previous:', previousLog)
+    console.log('📊 Changes:', { weightChange, fatChange, muscleChange })
+  }, [logs])
+
+  const getTrendIcon = (change: number, metric: 'weight' | 'fat' | 'muscle') => {
+    // Для веса и жира: уменьшение = хорошо (зелёный), увеличение = плохо (красный)
+    // Для мышц: увеличение = хорошо (зелёный), уменьшение = плохо (красный)
+    let isGood = false
+    if (metric === 'muscle') {
+      isGood = change >= 0
+    } else {
+      isGood = change <= 0
+    }
+    
+    if (change === 0) return <Minus className="w-4 h-4 text-gray-500" />
+    if (isGood) return <TrendingDown className={`w-4 h-4 ${metric === 'muscle' ? 'text-green-500' : 'text-green-500'}`} />
+    return <TrendingUp className="w-4 h-4 text-red-500" />
   }
 
   const getTrendText = (change: number, suffix: string) => {
@@ -134,7 +183,7 @@ export default function WeightPage() {
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-[hsl(var(--text-secondary))]">Вес</span>
                   <div className="flex items-center gap-1">
-                    {getTrendIcon(weightChange)}
+                    {getTrendIcon(weightChange, 'weight')}
                     <span className={`text-xs font-medium ${weightChange > 0 ? 'text-red-500' : weightChange < 0 ? 'text-green-500' : 'text-gray-500'}`}>
                       {getTrendText(weightChange, 'кг')}
                     </span>
@@ -152,7 +201,7 @@ export default function WeightPage() {
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-[hsl(var(--text-secondary))]">Процент жира</span>
                     <div className="flex items-center gap-1">
-                      {getTrendIcon(fatChange)}
+                      {getTrendIcon(fatChange, 'fat')}
                       <span className={`text-xs font-medium ${fatChange > 0 ? 'text-red-500' : fatChange < 0 ? 'text-green-500' : 'text-gray-500'}`}>
                         {getTrendText(fatChange, '%')}
                       </span>
@@ -171,7 +220,7 @@ export default function WeightPage() {
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-[hsl(var(--text-secondary))]">Мышечная масса</span>
                     <div className="flex items-center gap-1">
-                      {getTrendIcon(muscleChange)}
+                      {getTrendIcon(muscleChange, 'muscle')}
                       <span className={`text-xs font-medium ${muscleChange > 0 ? 'text-green-500' : muscleChange < 0 ? 'text-red-500' : 'text-gray-500'}`}>
                         {getTrendText(muscleChange, 'кг')}
                       </span>
