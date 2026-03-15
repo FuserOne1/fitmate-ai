@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Minus, Save, Droplets, GlassWater, Bottle, MugShot, History, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Minus, Save, Droplets, GlassWater, FlaskConical, Coffee, History, Trash2 } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 
 type WaterLog = {
@@ -21,8 +21,8 @@ type VolumeOption = {
 const VOLUME_OPTIONS: VolumeOption[] = [
   { id: 'sip', label: 'Глоток', volume: 50, icon: <Droplets className="w-6 h-6" />, emoji: '💧' },
   { id: 'glass', label: 'Стакан', volume: 250, icon: <GlassWater className="w-6 h-6" />, emoji: '🥛' },
-  { id: 'cup', label: 'Кружка', volume: 350, icon: <MugShot className="w-6 h-6" />, emoji: '☕' },
-  { id: 'bottle', label: 'Бутылка', volume: 500, icon: <Bottle className="w-6 h-6" />, emoji: '🍼' },
+  { id: 'cup', label: 'Кружка', volume: 350, icon: <Coffee className="w-6 h-6" />, emoji: '☕' },
+  { id: 'bottle', label: 'Бутылка', volume: 500, icon: <FlaskConical className="w-6 h-6" />, emoji: '🧪' },
 ]
 
 const DAILY_GOAL = 2000 // 2 литра
