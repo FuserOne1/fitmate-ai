@@ -42,11 +42,15 @@ export default function WeightPage() {
     if (!weight) return
 
     const today = getMoscowDate()
-    const newLog: WeightLog = {
-      date: today,
+    const now = new Date()
+    const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    
+    const newLog: WeightLog & { time?: string } = {
+      date: `${today}_${now.getTime()}`, // Уникальный ID с временем
       weight: parseFloat(weight),
       fatPercent: fatPercent ? parseFloat(fatPercent) : undefined,
-      muscleMass: muscleMass ? parseFloat(muscleMass) : undefined
+      muscleMass: muscleMass ? parseFloat(muscleMass) : undefined,
+      time: timeStr
     }
 
     // Загружаем актуальные данные из localStorage
@@ -58,9 +62,8 @@ export default function WeightPage() {
       } catch {}
     }
 
-    // Удаляем запись за сегодня если есть
-    const updatedLogs = currentLogs.filter(log => log.date !== today)
-    updatedLogs.unshift(newLog)
+    // Просто добавляем новую запись (не заменяем)
+    const updatedLogs = [newLog, ...currentLogs]
     updatedLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     setLogs(updatedLogs)
@@ -313,7 +316,14 @@ export default function WeightPage() {
                   История пуста
                 </p>
               ) : (
-                logs.map((log, index) => (
+                logs.map((log, index) => {
+                  // Извлекаем дату из формата "YYYY-MM-DD_timestamp"
+                  const datePart = log.date.split('_')[0]
+                  const timePart = log.time || log.date.split('_')[1]
+                  const displayDate = datePart === getMoscowDate() ? 'Сегодня' : new Date(datePart).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+                  const displayTime = timePart ? new Date(parseInt(timePart)).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''
+                  
+                  return (
                   <div
                     key={index}
                     className="flex justify-between items-center p-4 bg-[hsl(var(--muted))] rounded-xl border border-[hsl(var(--border))]"
@@ -321,9 +331,16 @@ export default function WeightPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <Scale className="w-4 h-4 text-purple-500" />
-                        <span className="font-medium text-[hsl(var(--text-primary))]">
-                          {log.date === getMoscowDate() ? 'Сегодня' : new Date(log.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </span>
+                        <div>
+                          <span className="font-medium text-[hsl(var(--text-primary))]">
+                            {displayDate}
+                          </span>
+                          {displayTime && (
+                            <span className="text-xs text-[hsl(var(--text-secondary))] ml-2">
+                              {displayTime}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-purple-500 font-bold">{log.weight} кг</span>
@@ -342,7 +359,8 @@ export default function WeightPage() {
                       <Trash2 className="w-4 h-4 text-red-500" />
                     </button>
                   </div>
-                ))
+                  )
+                })
               )}
             </div>
           </div>
