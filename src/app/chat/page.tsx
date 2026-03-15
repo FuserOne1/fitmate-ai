@@ -441,36 +441,90 @@ export default function ChatPage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col overflow-hidden">
-        {/* Вода - подтверждение */}
+      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col overflow-hidden mt-44">
+        {/* Вода - подтверждение (закреплено сверху) */}
         {pendingWaterVolume !== null && (
-          <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-lg border border-[hsl(var(--border))] mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Droplets className="w-5 h-5 text-blue-500" />
-              <h3 className="font-bold text-[hsl(var(--text-primary))]">Записать воду?</h3>
-            </div>
-            <div className="mb-4 text-center">
-              <p className="text-3xl font-bold text-blue-500">{pendingWaterVolume} мл</p>
-              <p className="text-sm text-[hsl(var(--text-secondary))]">💧 Чистой воды</p>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setPendingWaterVolume(null)} className="flex-1 py-2 bg-[hsl(var(--muted))] rounded-lg text-sm">Отмена</button>
-              <button onClick={addWaterToDiary} className="flex-1 py-2 bg-blue-500 text-white rounded-lg text-sm flex items-center justify-center gap-2">
-                <Droplets className="w-4 h-4" />
-                Добавить
-              </button>
+          <div className="fixed top-16 left-0 right-0 z-50 px-4 mb-4 pointer-events-none">
+            <div className="max-w-3xl mx-auto pointer-events-auto">
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl p-5 shadow-2xl border border-blue-400/30 animate-fade-in">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
+                      <Droplets className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-lg">Записать воду?</h3>
+                      <p className="text-xs text-white/80">💧 Чистой воды</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setPendingWaterVolume(null)}
+                    className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-colors"
+                  >
+                    <span className="text-white text-xl">×</span>
+                  </button>
+                </div>
+                <div className="bg-white/10 rounded-2xl p-4 mb-4">
+                  <p className="text-4xl font-bold text-white text-center">{pendingWaterVolume} <span className="text-lg font-medium">мл</span></p>
+                </div>
+                <button 
+                  onClick={addWaterToDiary}
+                  className="w-full bg-white text-blue-600 hover:bg-blue-50 rounded-2xl py-3 font-bold transition-colors flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <Droplets className="w-5 h-5" />
+                  Добавить воду
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Еда - подтверждение */}
+        {/* Еда - подтверждение (закреплено сверху) */}
         {pendingFoodEntry && (
-          <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-lg border border-[hsl(var(--border))] mb-4">
-            <div className="flex items-center gap-2 mb-3"><Utensils className="w-5 h-5 text-[hsl(var(--primary))]" /><h3 className="font-bold text-[hsl(var(--text-primary))]">Записать в дневник?</h3></div>
-            <div className="space-y-2 mb-4">{pendingFoodEntry.items.map((item, i) => (<div key={i} className="flex justify-between p-2 bg-[hsl(var(--muted))] rounded-lg"><span className="text-sm font-medium">{item.name}</span><span className="text-xs">{item.calories} ккал</span></div>))}</div>
-            <div className="flex gap-2">
-              <button onClick={() => setPendingFoodEntry(null)} className="flex-1 py-2 bg-[hsl(var(--muted))] rounded-lg text-sm">Отмена</button>
-              <button onClick={addFoodToDiary} className="flex-1 py-2 bg-[hsl(var(--primary))] text-white rounded-lg text-sm flex items-center justify-center gap-2"><span>+</span>Добавить</button>
+          <div className="fixed top-16 left-0 right-0 z-50 px-4 mb-4 pointer-events-none">
+            <div className="max-w-3xl mx-auto pointer-events-auto">
+              <div className="bg-gradient-to-br from-[hsl(var(--primary))] to-pink-500 rounded-3xl p-5 shadow-2xl border border-[hsl(var(--primary))]/30 animate-fade-in">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center">
+                      <Utensils className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-lg">Записать в дневник?</h3>
+                      <p className="text-xs text-white/80">🍽️ {pendingFoodEntry.items.length} прод.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setPendingFoodEntry(null)}
+                    className="w-8 h-8 bg-white/20 hover:bg-white/30 rounded-xl flex items-center justify-center transition-colors"
+                  >
+                    <span className="text-white text-xl">×</span>
+                  </button>
+                </div>
+                <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                  {pendingFoodEntry.items.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center bg-white/10 rounded-xl p-3">
+                      <span className="text-white font-medium text-sm">{item.name}</span>
+                      <span className="text-white font-bold text-sm">{item.calories} ккал</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setPendingFoodEntry(null)}
+                    className="flex-1 bg-white/20 hover:bg-white/30 text-white rounded-2xl py-3 font-medium transition-colors"
+                  >
+                    Отмена
+                  </button>
+                  <button 
+                    onClick={addFoodToDiary}
+                    className="flex-1 bg-white text-[hsl(var(--primary))] hover:bg-white/90 rounded-2xl py-3 font-bold transition-colors flex items-center justify-center gap-2 shadow-lg"
+                  >
+                    <span className="text-xl">+</span>
+                    Добавить
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
