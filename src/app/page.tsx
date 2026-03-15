@@ -91,27 +91,30 @@ export default function HomePage() {
 
   return (
     <div className={`min-h-screen ${themeConfig.colors.bg} transition-colors duration-300`}>
-      {/* Header с романтическим футером */}
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-[hsl(var(--bg-secondary))]/80 backdrop-blur-lg border-b border-[hsl(var(--border))]">
         <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-[hsl(var(--primary))] to-pink-500 bg-clip-text text-transparent">
               FitMate AI 🌸
             </h1>
-          </div>
-          {/* Романтическое послание от Сережи */}
-          <div className="bg-gradient-to-r from-[hsl(var(--primary))]/10 to-pink-500/10 rounded-2xl p-4 border border-[hsl(var(--primary))]/20">
-            <div className="flex items-center gap-2 mb-2">
-              <Heart className="w-4 h-4 [color:hsl(var(--primary))]" />
-              <p className="text-xs [color:hsl(var(--primary))] font-medium">От Сережи с любовью ❤️</p>
-            </div>
-            <p className="text-[hsl(var(--text-primary))] font-medium italic text-center">"{phrase}"</p>
+            <p className="text-[10px] text-[hsl(var(--text-secondary))]">
+              Created with ❤️ by FuserOne1 for Mashutka
+            </p>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
+        {/* Послание от Сережи */}
+        <div className="bg-gradient-to-r from-[hsl(var(--primary))]/10 to-pink-500/10 rounded-2xl p-4 border border-[hsl(var(--primary))]/20 mb-6">
+          <div className="flex items-center gap-2 mb-2 justify-center">
+            <Heart className="w-4 h-4 [color:hsl(var(--primary))]" />
+            <p className="text-xs [color:hsl(var(--primary))] font-medium">От Сережи с любовью ❤️</p>
+          </div>
+          <p className="text-[hsl(var(--text-primary))] font-medium italic text-center text-lg">"{phrase}"</p>
+        </div>
         {/* Быстрые действия */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <Link href="/diary" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))]">
@@ -229,18 +232,6 @@ export default function HomePage() {
           </Link>
         </div>
       </main>
-
-      {/* Romantic Footer */}
-      <div className="fixed bottom-20 left-0 right-0 flex justify-center pointer-events-none">
-        <div className="bg-[hsl(var(--card))]/90 backdrop-blur-sm rounded-full px-6 py-3 shadow-lg border border-[hsl(var(--border))] animate-fade-in">
-          <p className="text-sm text-[hsl(var(--text-secondary))] flex items-center gap-2">
-            <span className={themeConfig.colors.primaryText}>❤️</span>
-            <span className="font-medium">Created with love by FuserOne1</span>
-            <span className={themeConfig.colors.primaryText}>❤️</span>
-            <span className={`${themeConfig.colors.primaryText} font-semibold`}>for Mashutka</span>
-          </p>
-        </div>
-      </div>
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-[hsl(var(--card))] border-t border-[hsl(var(--border))]">
