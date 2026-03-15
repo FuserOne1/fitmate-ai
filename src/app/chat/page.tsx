@@ -75,6 +75,7 @@ function cleanContent(content: string) {
 }
 
 export default function ChatPage() {
+  const { themeConfig } = useTheme()
   const [messages, setMessages] = useState<Message[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('fitmate-chat')
