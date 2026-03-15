@@ -29,21 +29,17 @@ export default function ChatPage() {
         } catch {}
       }
     }
-    return [
-      {
-        role: 'assistant',
-        content: 'Привет, Маша! Я твой AI-помощник FitMate! 💕\n\nМогу помочь с:\n• Вопросами о питании\n• Советами по тренировкам\n• Мотивацией\n• Расчётом калорий\n\nА ещё я знаю, что ты сегодня ела — могу помочь записать обед! 😊',
-        timestamp: Date.now(),
-      },
-    ]
+    return [{
+      role: 'assistant',
+      content: 'Привет, Маша! Я твой AI-помощник FitMate! 💕\n\nМогу помочь с:\n• Вопросами о питании\n• Советами по тренировкам\n• Мотивацией\n• Расчётом калорий\n\nА ещё я знаю, что ты сегодня ела — могу помочь записать обед! 😊',
+      timestamp: Date.now(),
+    }]
   })
-  
   const [diaryData, setDiaryData] = useState<DiaryData | null>(null)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Загрузка данных из дневника
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('fitmate-diary')
@@ -59,7 +55,6 @@ export default function ChatPage() {
     }
   }, [])
 
-  // Сохранение чата
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('fitmate-chat', JSON.stringify(messages))
@@ -76,19 +71,13 @@ export default function ChatPage() {
 
   async function sendMessage() {
     if (!input.trim() || loading) return
-
-    const userMessage: Message = { 
-      role: 'user', 
-      content: input,
-      timestamp: Date.now()
-    }
-    setMessages((prev) => [...prev, userMessage])
+    const userMessage: Message = { role: 'user', content: input, timestamp: Date.now() }
+    setMessages(prev => [...prev, userMessage])
     setInput('')
     setLoading(true)
 
     try {
-      // Формируем контекст из дневника
-      const diaryContext = diaryData 
+      const diaryContext = diaryData
         ? `\n\n[КОНТЕКСТ: Сегодня Маша уже съела на ${diaryData.calories} ккал. Б: ${diaryData.protein}г, Ж: ${diaryData.fat}г, У: ${diaryData.carbs}г]`
         : ''
 
@@ -96,45 +85,20 @@ export default function ChatPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: messages.map((m) => ({ 
-            role: m.role, 
-            content: m.content 
-          })),
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
           diaryContext,
         }),
       })
-
       const data = await response.json()
 
       if (response.ok && data.data) {
-        setMessages((prev) => [
-          ...prev,
-          { 
-            role: 'assistant', 
-            content: data.data,
-            timestamp: Date.now()
-          },
-        ])
+        setMessages(prev => [...prev, { role: 'assistant', content: data.data, timestamp: Date.now() }])
       } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: `Ошибка: ${data.error || 'Что-то пошло не так 😅'}`,
-            timestamp: Date.now(),
-          },
-        ])
+        setMessages(prev => [...prev, { role: 'assistant', content: `Ошибка: ${data.error || 'Что-то пошло не так 😅'}`, timestamp: Date.now() }])
       }
     } catch (error) {
       console.error('Chat error:', error)
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: 'Ошибка соединения. Проверь интернет и попробуй снова 💕',
-          timestamp: Date.now(),
-        },
-      ])
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Ошибка соединения. Проверь интернет 💕', timestamp: Date.now() }])
     } finally {
       setLoading(false)
     }
@@ -149,45 +113,34 @@ export default function ChatPage() {
 
   function clearChat() {
     if (confirm('Очистить историю чата?')) {
-      setMessages([
-        {
-          role: 'assistant',
-          content: 'Привет, Маша! Я твой AI-помощник FitMate! 💕\n\nЧем могу помочь сегодня?',
-          timestamp: Date.now(),
-        },
-      ])
+      setMessages([{
+        role: 'assistant',
+        content: 'Привет, Маша! Я твой AI-помощник FitMate! 💕\n\nЧем могу помочь сегодня?',
+        timestamp: Date.now(),
+      }])
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 to-pink-100 flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-rose-100">
+    <div className={`min-h-screen ${themeConfig.colors.bg} transition-colors duration-300`}>
+      <header className="sticky top-0 z-50 bg-[hsl(var(--bg-secondary))]/80 backdrop-blur-lg border-b border-[hsl(var(--border))]">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="p-2 hover:bg-rose-100 rounded-xl transition-colors"
-            >
-              <ArrowLeft className="w-6 h-6 text-rose-600" />
+            <Link href="/" className="p-2 hover:bg-[hsl(var(--muted))] rounded-xl transition-colors">
+              <ArrowLeft className={`w-6 h-6 ${themeConfig.colors.primaryText}`} />
             </Link>
             <div className="flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-rose-500" />
-              <h1 className="text-xl font-bold text-gray-800">AI Помощник</h1>
+              <Sparkles className={`w-6 h-6 ${themeConfig.colors.primaryText}`} />
+              <h1 className="text-xl font-bold text-[hsl(var(--text-primary))]">AI Помощник</h1>
             </div>
           </div>
-          <button
-            onClick={clearChat}
-            className="p-2 text-xs text-gray-500 hover:text-rose-600 transition-colors"
-          >
+          <button onClick={clearChat} className="p-2 text-xs text-[hsl(var(--text-secondary))] hover:text-red-500 transition-colors">
             Очистить
           </button>
         </div>
       </header>
 
-      {/* Messages */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 overflow-hidden flex flex-col">
-        {/* Diary Context */}
         {diaryData && diaryData.calories > 0 && (
           <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-md border border-[hsl(var(--border))] mb-4">
             <div className="flex items-center gap-2 mb-2">
@@ -217,27 +170,15 @@ export default function ChatPage() {
 
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">
           {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? `${themeConfig.colors.primaryBg} text-white rounded-br-md`
-                    : 'bg-[hsl(var(--card))] text-[hsl(var(--text-primary))] shadow-md border border-[hsl(var(--border))] rounded-bl-md'
-                }`}
-              >
+            <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                message.role === 'user'
+                  ? `${themeConfig.colors.primaryBg} text-white rounded-br-md`
+                  : 'bg-[hsl(var(--card))] text-[hsl(var(--text-primary))] shadow-md border border-[hsl(var(--border))] rounded-bl-md'
+              }`}>
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                <p className={`text-xs mt-1 ${
-                  message.role === 'user' ? 'text-rose-200' : 'text-gray-400'
-                }`}>
-                  {new Date(message.timestamp).toLocaleTimeString('ru-RU', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
+                <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-white/70' : 'text-[hsl(var(--text-secondary))]'}`}>
+                  {new Date(message.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
             </div>
@@ -247,14 +188,8 @@ export default function ChatPage() {
               <div className="bg-[hsl(var(--card))] rounded-2xl px-4 py-3 shadow-md border border-[hsl(var(--border))]">
                 <div className="flex gap-1">
                   <div className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`} />
-                  <div
-                    className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`}
-                    style={{ animationDelay: '0.1s' }}
-                  />
-                  <div
-                    className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`}
-                    style={{ animationDelay: '0.2s' }}
-                  />
+                  <div className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`} style={{ animationDelay: '0.1s' }} />
+                  <div className={`w-2 h-2 ${themeConfig.colors.primaryBg} rounded-full animate-bounce`} style={{ animationDelay: '0.2s' }} />
                 </div>
               </div>
             </div>
@@ -262,7 +197,6 @@ export default function ChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input */}
         <div className="bg-[hsl(var(--card))] rounded-2xl p-2 shadow-lg border border-[hsl(var(--border))]">
           <div className="flex items-end gap-2">
             <textarea
