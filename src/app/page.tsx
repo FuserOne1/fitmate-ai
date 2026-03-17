@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Utensils, Droplets, Scale, MessageCircle, Heart } from 'lucide-react'
+import { Utensils, Droplets, Scale, MessageCircle, Heart, Footprints, Dumbbell, TrendingUp } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 
 // Милые фразы от Сережи
@@ -25,6 +25,8 @@ export default function HomePage() {
   const [diaryData, setDiaryData] = useState({ calories: 0, protein: 0, fat: 0, carbs: 0 })
   const [waterIntake, setWaterIntake] = useState(0)
   const [weightData, setWeightData] = useState<{weight: number, fatPercent?: number, muscleMass?: number} | null>(null)
+  const [stepsData, setStepsData] = useState<{steps: number, distance_km?: number, calories_burned?: number} | null>(null)
+  const [workoutStats, setWorkoutStats] = useState<{count: number, calories: number, minutes: number}>({ count: 0, calories: 0, minutes: 0 })
 
   useEffect(() => {
     // Выбираем случайную фразу при загрузке
@@ -74,13 +76,46 @@ export default function HomePage() {
           }
         } catch {}
       }
+
+      // Шаги (за сегодня)
+      const stepsSaved = localStorage.getItem('fitmate-steps')
+      if (stepsSaved) {
+        try {
+          const logs = JSON.parse(stepsSaved)
+          const today = new Date().toISOString().split('T')[0]
+          const todayLog = logs.find((log: any) => log.date === today)
+          if (todayLog) {
+            setStepsData({
+              steps: todayLog.steps || 0,
+              distance_km: todayLog.distance_km,
+              calories_burned: todayLog.calories_burned
+            })
+          }
+        } catch {}
+      }
+
+      // Тренировки (статистика за неделю)
+      const workoutsSaved = localStorage.getItem('fitmate-workouts')
+      if (workoutsSaved) {
+        try {
+          const logs = JSON.parse(workoutsSaved)
+          const weekAgo = new Date()
+          weekAgo.setDate(weekAgo.getDate() - 7)
+          const weekWorkouts = logs.filter((w: any) => new Date(w.workout_date) >= weekAgo)
+          setWorkoutStats({
+            count: weekWorkouts.length,
+            calories: weekWorkouts.reduce((sum: number, w: any) => sum + (w.calories_burned || 0), 0),
+            minutes: weekWorkouts.reduce((sum: number, w: any) => sum + (w.duration_minutes || 0), 0)
+          })
+        } catch {}
+      }
     }
 
     loadAllData()
 
     // Слушаем изменения в localStorage
     const handleStorageChange = (e: StorageEvent) => {
-      if (['fitmate-diary', 'fitmate-water', 'fitmate-weight'].includes(e.key || '')) {
+      if (['fitmate-diary', 'fitmate-water', 'fitmate-weight', 'fitmate-steps', 'fitmate-workouts'].includes(e.key || '')) {
         loadAllData()
       }
     }
@@ -115,46 +150,39 @@ export default function HomePage() {
           </div>
           <p className="text-[hsl(var(--text-primary))] font-medium italic text-center text-lg">"{phrase}"</p>
         </div>
-        {/* Быстрые действия */}
+
+        {/* Быстрые действия - 4 основные кнопки */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <Link href="/diary" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))]">
-            <div className={`w-12 h-12 ${themeConfig.colors.primaryBg}/10 rounded-xl flex items-center justify-center mb-3`}>
-              <Utensils className={`w-6 h-6 ${themeConfig.colors.primaryText}`} />
+          <Link href="/nutrition" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))]">
+            <div className="w-12 h-12 bg-gradient-to-br from-rose-500/10 to-pink-500/10 rounded-xl flex items-center justify-center mb-3">
+              <span className="text-2xl">🍽️</span>
             </div>
-            <h3 className="font-semibold text-[hsl(var(--text-primary))]">Дневник</h3>
-            <p className="text-sm text-[hsl(var(--text-secondary))]">Записать еду</p>
+            <h3 className="font-semibold text-[hsl(var(--text-primary))]">Питание</h3>
+            <p className="text-xs text-[hsl(var(--text-secondary))]">Дневник и вода</p>
           </Link>
 
-          <Link href="/water" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))]">
-            <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center mb-3">
-              <Droplets className="w-6 h-6 text-blue-500" />
-            </div>
-            <h3 className="font-semibold text-[hsl(var(--text-primary))]">Вода</h3>
-            <p className="text-sm text-[hsl(var(--text-secondary))]">Трекер</p>
-          </Link>
-
-          <Link href="/weight" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))]">
-            <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center mb-3">
-              <Scale className="w-6 h-6 text-purple-500" />
-            </div>
-            <h3 className="font-semibold text-[hsl(var(--text-primary))]">Вес</h3>
-            <p className="text-sm text-[hsl(var(--text-secondary))]">Взвешивание</p>
-          </Link>
-
-          <Link href="/chat" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))]">
-            <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-3">
-              <MessageCircle className="w-6 h-6 text-green-500" />
-            </div>
-            <h3 className="font-semibold text-[hsl(var(--text-primary))]">AI Чат</h3>
-            <p className="text-sm text-[hsl(var(--text-secondary))]">Помощник</p>
-          </Link>
-
-          <Link href="/activity" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))] col-span-2">
-            <div className="w-12 h-12 bg-orange-500/10 rounded-xl flex items-center justify-center mb-3">
+          <Link href="/activity" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))]">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-xl flex items-center justify-center mb-3">
               <span className="text-2xl">🏃‍♀️</span>
             </div>
             <h3 className="font-semibold text-[hsl(var(--text-primary))]">Активность</h3>
-            <p className="text-sm text-[hsl(var(--text-secondary))]">Шаги и тренировки</p>
+            <p className="text-xs text-[hsl(var(--text-secondary))]">Шаги и тренировки</p>
+          </Link>
+
+          <Link href="/weight" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))]">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl flex items-center justify-center mb-3">
+              <Scale className={`w-6 h-6 text-purple-500`} />
+            </div>
+            <h3 className="font-semibold text-[hsl(var(--text-primary))]">Вес</h3>
+            <p className="text-xs text-[hsl(var(--text-secondary))]">Взвешивание</p>
+          </Link>
+
+          <Link href="/chat" className="bg-[hsl(var(--card))] rounded-2xl p-5 shadow-md hover:shadow-lg transition-all active:scale-95 border border-[hsl(var(--border))]">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl flex items-center justify-center mb-3">
+              <MessageCircle className="w-6 h-6 text-green-500" />
+            </div>
+            <h3 className="font-semibold text-[hsl(var(--text-primary))]">AI Чат</h3>
+            <p className="text-xs text-[hsl(var(--text-secondary))]">Помощник</p>
           </Link>
         </div>
 
@@ -238,6 +266,72 @@ export default function HomePage() {
               </div>
             )}
           </Link>
+
+          {/* Шаги */}
+          <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] flex items-center gap-2">
+                <Footprints className="w-5 h-5 text-green-500" />
+                Шаги сегодня
+              </h3>
+              <Link href="/steps" className={`text-xs font-medium ${themeConfig.colors.primaryText} hover:underline`}>
+                Все →
+              </Link>
+            </div>
+            {stepsData && stepsData.steps > 0 ? (
+              <div className="space-y-3">
+                <div className="text-center p-4 bg-green-500/10 rounded-2xl">
+                  <div className="text-4xl font-bold text-green-500 mb-1">{stepsData.steps.toLocaleString()}</div>
+                  <div className="text-sm text-[hsl(var(--text-secondary))]">шагов</div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {stepsData.distance_km && (
+                    <div className="text-center p-3 bg-blue-500/10 rounded-xl">
+                      <div className="text-lg font-bold text-blue-500">{stepsData.distance_km.toFixed(1)}</div>
+                      <div className="text-xs text-[hsl(var(--text-secondary))]">км</div>
+                    </div>
+                  )}
+                  {stepsData.calories_burned && (
+                    <div className="text-center p-3 bg-orange-500/10 rounded-xl">
+                      <div className="text-lg font-bold text-orange-500">{Math.round(stepsData.calories_burned)}</div>
+                      <div className="text-xs text-[hsl(var(--text-secondary))]">ккал</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center p-4 bg-[hsl(var(--muted))] rounded-2xl">
+                <div className="text-sm text-[hsl(var(--text-secondary))]">Шаги ещё не записаны</div>
+              </div>
+            )}
+          </div>
+
+          {/* Тренировки за неделю */}
+          <div className="bg-[hsl(var(--card))] rounded-3xl p-6 shadow-lg border border-[hsl(var(--border))]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-[hsl(var(--text-primary))] flex items-center gap-2">
+                <Dumbbell className="w-5 h-5 text-orange-500" />
+                Активность за неделю
+              </h3>
+              <Link href="/workouts" className={`text-xs font-medium ${themeConfig.colors.primaryText} hover:underline`}>
+                Все →
+              </Link>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center p-3 bg-orange-500/10 rounded-xl">
+                <div className="text-2xl font-bold text-orange-500">{workoutStats.count}</div>
+                <div className="text-xs text-[hsl(var(--text-secondary))]">тренировок</div>
+              </div>
+              <div className="text-center p-3 bg-red-500/10 rounded-xl">
+                <div className="text-2xl font-bold text-red-500">{workoutStats.calories}</div>
+                <div className="text-xs text-[hsl(var(--text-secondary))]">ккал</div>
+              </div>
+              <div className="text-center p-3 bg-green-500/10 rounded-xl">
+                <div className="text-2xl font-bold text-green-500">{Math.round(workoutStats.minutes / 60)}</div>
+                <div className="text-xs text-[hsl(var(--text-secondary))]">часов</div>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -248,9 +342,9 @@ export default function HomePage() {
             <span className={`text-xl ${themeConfig.colors.primaryText}`}>🏠</span>
             <span className={`text-xs font-medium ${themeConfig.colors.primaryText}`}>Главная</span>
           </Link>
-          <Link href="/diary" className="flex flex-col items-center p-2 text-[hsl(var(--text-secondary))] hover:${themeConfig.colors.primaryText} transition-colors">
+          <Link href="/nutrition" className="flex flex-col items-center p-2 text-[hsl(var(--text-secondary))] hover:${themeConfig.colors.primaryText} transition-colors">
             <span className="text-xl">🍽️</span>
-            <span className="text-xs font-medium text-[hsl(var(--text-secondary))] hover:${themeConfig.colors.primaryText}">Дневник</span>
+            <span className="text-xs font-medium text-[hsl(var(--text-secondary))] hover:${themeConfig.colors.primaryText}">Питание</span>
           </Link>
           <Link href="/activity" className="flex flex-col items-center p-2 text-[hsl(var(--text-secondary))] hover:${themeConfig.colors.primaryText} transition-colors">
             <span className="text-xl">🏃‍♀️</span>
