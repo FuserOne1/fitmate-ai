@@ -429,8 +429,15 @@ export default function ChatPage() {
   }
 
   async function sendImageWithDescription() {
-    if (!selectedImage) return
+    console.log('📸 sendImageWithDescription вызвана')
+    console.log('selectedImage:', selectedImage ? 'есть' : 'нет')
+    console.log('imageDescription:', imageDescription)
     
+    if (!selectedImage) {
+      console.error('❌ Нет selectedImage!')
+      return
+    }
+
     setAnalyzingImage(true)
     try {
       const prompt = imageDescription 
@@ -748,13 +755,19 @@ export default function ChatPage() {
               <div className="flex gap-3">
                 <button
                   onClick={cancelImageSelect}
-                  className="flex-1 py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors font-medium"
+                  disabled={analyzingImage}
+                  className="flex-1 py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors font-medium disabled:opacity-50"
                 >
                   Отмена
                 </button>
                 <button
-                  onClick={sendImageWithDescription}
-                  disabled={analyzingImage}
+                  onClick={() => {
+                    console.log('🔘 Нажата кнопка Отправить')
+                    console.log('selectedImage:', selectedImage ? 'есть' : 'нет')
+                    console.log('imageDescription:', imageDescription)
+                    sendImageWithDescription()
+                  }}
+                  disabled={analyzingImage || !selectedImage}
                   className={`flex-1 py-3 bg-[hsl(var(--primary))] text-white rounded-xl hover:opacity-90 disabled:opacity-50 transition-colors font-medium flex items-center justify-center gap-2`}
                 >
                   {analyzingImage ? (
