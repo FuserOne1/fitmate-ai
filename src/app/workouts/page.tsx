@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Send, Plus, Trash2, Calendar, Flame, TrendingUp, Activity } from 'lucide-react'
+import { ArrowLeft, Send, Plus, Trash2, Calendar, Flame, TrendingUp, Activity, Image as ImageIcon, X } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 
 type Workout = {
@@ -17,6 +17,7 @@ type Workout = {
   mood_before: number | null
   mood_after: number | null
   notes: string | null
+  photo_url?: string | null
 }
 
 const WORKOUT_TYPES: Record<string, { label: string; emoji: string; color: string }> = {
@@ -36,8 +37,11 @@ export default function WorkoutsPage() {
   const [loading, setLoading] = useState(false)
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [showConfirm, setShowConfirm] = useState(false)
-  const [parsedWorkout, setParsedWorkout] = useState<Partial<Workout> | null>(null)
+  const [parsedWorkout, setParsedWorkout] = useState<any | null>(null)
   const [view, setView] = useState<'list' | 'calendar'>('list')
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadWorkouts()
@@ -49,6 +53,7 @@ export default function WorkoutsPage() {
       const data = await response.json()
       if (data.success) {
         setWorkouts(data.data)
+        localStorage.setItem('fitmate-workouts', JSON.stringify(data.data))
       }
     } catch (error) {
       console.error('Failed to load workouts:', error)
@@ -79,24 +84,68 @@ export default function WorkoutsPage() {
     }
   }
 
+  async function compressImage(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = (event) => {
+        const img = document.createElement('img')
+        img.src = event.target?.result as string
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          let width = img.width, height = img.height
+          if (width > 1024) { height = (height * 1024) / width; width = 1024 }
+          canvas.width = width; canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, width, height)
+          resolve(canvas.toDataURL('image/jpeg', 0.8))
+        }
+        reader.onerror = reject
+      }
+    })
+  }
+
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      alert('Пожалуйста, выбери изображение')
+      return
+    }
+    try {
+      setUploading(true)
+      const compressed = await compressImage(file)
+      setSelectedPhoto(compressed)
+    } catch (error) {
+      console.error('Photo error:', error)
+      alert('Ошибка загрузки фото')
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
   async function saveWorkout() {
     if (!parsedWorkout) return
-    
+
     try {
+      const workoutData = {
+        workout_type: parsedWorkout.workout_type,
+        workout_date: new Date().toISOString(),
+        duration_minutes: parsedWorkout.duration_minutes,
+        calories_burned: parsedWorkout.calories_burned,
+        distance_km: parsedWorkout.distance_km,
+        exercises: parsedWorkout.exercises,
+        ai_analysis: parsedWorkout.ai_analysis,
+        ai_tips: parsedWorkout.ai_tips,
+        notes: input,
+        photo_url: selectedPhoto,
+      }
+
       const response = await fetch('/api/workouts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workout_type: parsedWorkout.workout_type,
-          workout_date: new Date().toISOString(),
-          duration_minutes: parsedWorkout.duration_minutes,
-          calories_burned: parsedWorkout.calories_burned,
-          distance_km: parsedWorkout.distance_km,
-          exercises: (parsedWorkout as any).exercises,
-          ai_analysis: parsedWorkout.ai_analysis,
-          ai_tips: parsedWorkout.ai_tips,
-          notes: input,
-        }),
+        body: JSON.stringify(workoutData),
       })
       const data = await response.json()
       if (data.success) {
@@ -104,6 +153,7 @@ export default function WorkoutsPage() {
         setInput('')
         setParsedWorkout(null)
         setShowConfirm(false)
+        setSelectedPhoto(null)
       }
     } catch (error) {
       console.error('Save error:', error)
@@ -133,7 +183,6 @@ export default function WorkoutsPage() {
     return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
   }
 
-  // Статистика
   const totalWorkouts = workouts.length
   const totalCalories = workouts.reduce((sum, w) => sum + (w.calories_burned || 0), 0)
   const totalMinutes = workouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0)
@@ -160,7 +209,7 @@ export default function WorkoutsPage() {
           </div>
           <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-md border border-[hsl(var(--border))] text-center">
             <Flame className="w-6 h-6 text-orange-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-orange-500">{totalCalories}</div>
+            <div className="text-2xl font-bold text-orange-500">{Math.round(totalCalories)}</div>
             <div className="text-xs text-[hsl(var(--text-secondary))]">ккал</div>
           </div>
           <div className="bg-[hsl(var(--card))] rounded-2xl p-4 shadow-md border border-[hsl(var(--border))] text-center">
@@ -181,6 +230,43 @@ export default function WorkoutsPage() {
               className="w-full resize-none bg-[hsl(var(--muted))] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/50 text-[hsl(var(--text-primary))]"
               rows={3}
             />
+            
+            {/* Загрузка фото */}
+            <div className="flex items-center gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoSelect}
+                className="hidden"
+                id="workout-photo"
+              />
+              <label
+                htmlFor="workout-photo"
+                className="flex items-center gap-2 px-4 py-2 bg-[hsl(var(--muted))] rounded-xl cursor-pointer hover:bg-[hsl(var(--muted))]/80 transition-colors"
+              >
+                <ImageIcon className={`w-5 h-5 ${themeConfig.colors.primaryText}`} />
+                <span className="text-sm text-[hsl(var(--text-primary))]">
+                  {selectedPhoto ? 'Фото выбрано' : 'Добавить фото'}
+                </span>
+              </label>
+              {selectedPhoto && (
+                <button
+                  onClick={() => setSelectedPhoto(null)}
+                  className="p-2 bg-red-500/20 rounded-xl hover:bg-red-500/30 transition-colors"
+                >
+                  <X className="w-5 h-5 text-red-500" />
+                </button>
+              )}
+            </div>
+            
+            {/* Превью фото */}
+            {selectedPhoto && (
+              <div className="relative">
+                <img src={selectedPhoto} alt="Preview" className="w-full h-48 object-cover rounded-xl" />
+              </div>
+            )}
+            
             <button
               onClick={analyzeWorkout}
               disabled={loading || !input.trim()}
@@ -210,7 +296,7 @@ export default function WorkoutsPage() {
                     {parsedWorkout.workout_type && WORKOUT_TYPES[parsedWorkout.workout_type]?.label}
                   </p>
                   <p className="text-xs text-[hsl(var(--text-secondary))]">
-                    {parsedWorkout.duration_minutes} мин • {parsedWorkout.calories_burned} ккал
+                    {Math.round(parsedWorkout.duration_minutes || 0)} мин • {Math.round(parsedWorkout.calories_burned || 0)} ккал
                   </p>
                 </div>
               </div>
@@ -224,7 +310,7 @@ export default function WorkoutsPage() {
               {parsedWorkout.ai_tips && parsedWorkout.ai_tips.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-[hsl(var(--text-secondary))]">💡 Советы:</p>
-                  {parsedWorkout.ai_tips.map((tip, i) => (
+                  {parsedWorkout.ai_tips.map((tip: string, i: number) => (
                     <p key={i} className="text-xs text-[hsl(var(--text-secondary))] bg-[hsl(var(--muted))] p-2 rounded-lg">
                       {tip}
                     </p>
@@ -235,7 +321,7 @@ export default function WorkoutsPage() {
             
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowConfirm(false); setParsedWorkout(null); setInput(''); }}
+                onClick={() => { setShowConfirm(false); setParsedWorkout(null); setInput(''); setSelectedPhoto(null); }}
                 className="flex-1 py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors font-medium"
               >
                 Отмена
@@ -281,10 +367,7 @@ export default function WorkoutsPage() {
           {workouts.length > 0 ? (
             <div className="space-y-3">
               {workouts.map((workout) => (
-                <div
-                  key={workout.id}
-                  className="bg-[hsl(var(--muted))] rounded-xl p-4"
-                >
+                <div key={workout.id} className="bg-[hsl(var(--muted))] rounded-xl p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">
@@ -309,13 +392,13 @@ export default function WorkoutsPage() {
                   
                   <div className="flex gap-4 text-xs text-[hsl(var(--text-secondary))]">
                     {workout.duration_minutes && (
-                      <span>⏱️ {workout.duration_minutes} мин</span>
+                      <span>⏱️ {Math.round(workout.duration_minutes)} мин</span>
                     )}
                     {workout.calories_burned && (
-                      <span>🔥 {workout.calories_burned} ккал</span>
+                      <span>🔥 {Math.round(workout.calories_burned)} ккал</span>
                     )}
                     {workout.distance_km && (
-                      <span>📍 {workout.distance_km} км</span>
+                      <span>📍 {workout.distance_km.toFixed(1)} км</span>
                     )}
                   </div>
                   
@@ -323,6 +406,14 @@ export default function WorkoutsPage() {
                     <p className="text-xs text-[hsl(var(--text-secondary))] mt-2 italic">
                       {workout.ai_analysis}
                     </p>
+                  )}
+                  
+                  {workout.photo_url && (
+                    <img 
+                      src={workout.photo_url} 
+                      alt="Workout" 
+                      className="mt-3 w-full h-32 object-cover rounded-lg"
+                    />
                   )}
                 </div>
               ))}

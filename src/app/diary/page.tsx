@@ -353,19 +353,19 @@ export default function DiaryPage() {
           
           <div className="grid grid-cols-4 gap-3 mb-4">
             <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
-              <p className={`text-2xl font-bold ${themeConfig.colors.primaryText}`}>{currentLog.total.calories}</p>
+              <p className={`text-3xl font-bold ${themeConfig.colors.primaryText}`}>{Math.round(currentLog.total.calories)}</p>
               <p className="text-xs text-[hsl(var(--text-secondary))]">ккал</p>
             </div>
             <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
-              <p className="text-2xl font-bold text-blue-500">{currentLog.total.protein}</p>
+              <p className="text-3xl font-bold text-blue-500">{Math.round(currentLog.total.protein)}</p>
               <p className="text-xs text-[hsl(var(--text-secondary))]">белки</p>
             </div>
             <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
-              <p className="text-2xl font-bold text-yellow-500">{currentLog.total.fat}</p>
+              <p className="text-3xl font-bold text-yellow-500">{Math.round(currentLog.total.fat)}</p>
               <p className="text-xs text-[hsl(var(--text-secondary))]">жиры</p>
             </div>
             <div className="text-center p-3 bg-[hsl(var(--muted))] rounded-xl">
-              <p className="text-2xl font-bold text-green-500">{currentLog.total.carbs}</p>
+              <p className="text-3xl font-bold text-green-500">{Math.round(currentLog.total.carbs)}</p>
               <p className="text-xs text-[hsl(var(--text-secondary))]">углеводы</p>
             </div>
           </div>
