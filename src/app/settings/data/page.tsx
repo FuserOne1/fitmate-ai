@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Trash2, Database, MessageSquare, Utensils, Scale, Droplets } from 'lucide-react'
+import { ArrowLeft, Trash2, Database, MessageSquare, Utensils, Scale, Droplets, Footprints, Dumbbell } from 'lucide-react'
 import { useTheme } from '@/lib/theme'
 
 export default function DataPage() {
@@ -15,14 +15,16 @@ export default function DataPage() {
         diary: localStorage.getItem('fitmate-diary') ? 'Есть данные' : 'Пусто',
         water: localStorage.getItem('fitmate-water') ? 'Есть данные' : 'Пусто',
         weight: localStorage.getItem('fitmate-weight') ? 'Есть данные' : 'Пусто',
+        steps: localStorage.getItem('fitmate-steps') ? 'Есть данные' : 'Пусто',
+        workouts: localStorage.getItem('fitmate-workouts') ? 'Есть данные' : 'Пусто',
         theme: localStorage.getItem('fitmate-theme') || 'rose',
       }
     }
-    return { chat: '...', diary: '...', water: '...', weight: '...', theme: '...' }
+    return { chat: '...', diary: '...', water: '...', weight: '...', steps: '...', workouts: '...', theme: '...' }
   })
 
   function clearLocalStorage() {
-    if (!confirm('Вы уверены? Это удалит ВСЕ данные:\n\n• История чата\n• Записи дневника\n• Трекер воды\n• Замеры веса\n• Настройки темы\n\nЭто действие необратимо!')) {
+    if (!confirm('Вы уверены? Это удалит ВСЕ данные:\n\n• История чата\n• Записи дневника\n• Трекер воды\n• Замеры веса\n• Шаги\n• Тренировки\n• Настройки темы\n\nЭто действие необратимо!')) {
       return
     }
 
@@ -33,6 +35,8 @@ export default function DataPage() {
     localStorage.removeItem('fitmate-diary')
     localStorage.removeItem('fitmate-water')
     localStorage.removeItem('fitmate-weight')
+    localStorage.removeItem('fitmate-steps')
+    localStorage.removeItem('fitmate-workouts')
     localStorage.removeItem('fitmate-theme')
 
     // Обновляем статистику
@@ -41,6 +45,8 @@ export default function DataPage() {
       diary: 'Пусто',
       water: 'Пусто',
       weight: 'Пусто',
+      steps: 'Пусто',
+      workouts: 'Пусто',
       theme: 'rose',
     })
 
@@ -74,6 +80,20 @@ export default function DataPage() {
     localStorage.removeItem('fitmate-weight')
     setStats(prev => ({ ...prev, weight: 'Пусто' }))
     alert('Замеры веса очищены! ⚖️')
+  }
+
+  function clearStepsOnly() {
+    if (!confirm('Очистить только шаги?')) return
+    localStorage.removeItem('fitmate-steps')
+    setStats(prev => ({ ...prev, steps: 'Пусто' }))
+    alert('Шаги очищены! 👣')
+  }
+
+  function clearWorkoutsOnly() {
+    if (!confirm('Очистить только тренировки?')) return
+    localStorage.removeItem('fitmate-workouts')
+    setStats(prev => ({ ...prev, workouts: 'Пусто' }))
+    alert('Тренировки очищены! 💪')
   }
 
   return (
@@ -130,6 +150,24 @@ export default function DataPage() {
               <span className={`text-sm font-medium ${
                 stats.weight === 'Пусто' ? 'text-green-500' : 'text-yellow-500'
               }`}>{stats.weight}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <div className="flex items-center gap-3">
+                <Footprints className="w-5 h-5 text-green-500" />
+                <span className="text-[hsl(var(--text-primary))]">Шаги</span>
+              </div>
+              <span className={`text-sm font-medium ${
+                stats.steps === 'Пусто' ? 'text-green-500' : 'text-yellow-500'
+              }`}>{stats.steps}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-[hsl(var(--muted))] rounded-xl">
+              <div className="flex items-center gap-3">
+                <Dumbbell className="w-5 h-5 text-orange-500" />
+                <span className="text-[hsl(var(--text-primary))]">Тренировки</span>
+              </div>
+              <span className={`text-sm font-medium ${
+                stats.workouts === 'Пусто' ? 'text-green-500' : 'text-yellow-500'
+              }`}>{stats.workouts}</span>
             </div>
             <div className="flex justify-between items-center p-3 bg-[hsl(var(--muted))] rounded-xl">
               <div className="flex items-center gap-3">
@@ -192,6 +230,20 @@ export default function DataPage() {
             >
               <Scale className="w-4 h-4" />
               Вес
+            </button>
+            <button
+              onClick={clearStepsOnly}
+              className="py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors flex items-center justify-center gap-2 font-medium"
+            >
+              <Footprints className="w-4 h-4" />
+              Шаги
+            </button>
+            <button
+              onClick={clearWorkoutsOnly}
+              className="py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors flex items-center justify-center gap-2 font-medium"
+            >
+              <Dumbbell className="w-4 h-4" />
+              Тренировки
             </button>
           </div>
         </div>
