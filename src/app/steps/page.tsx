@@ -32,16 +32,15 @@ export default function StepsPage() {
 
   async function loadSteps() {
     try {
-      const response = await fetch('/api/steps')
-      const data = await response.json()
-      if (data.success) {
-        setStepsLogs(data.data)
-        localStorage.setItem('fitmate-steps', JSON.stringify(data.data))
-        
-        const today = new Date().toISOString().split('T')[0]
-        const todayLog = data.data.find((log: any) => log.date === today)
-        setTodaySteps(todayLog || null)
-      }
+      // Читаем напрямую из localStorage
+      const stepsSaved = localStorage.getItem('fitmate-steps')
+      const stepsLogs = stepsSaved ? JSON.parse(stepsSaved) : []
+      
+      setStepsLogs(stepsLogs)
+
+      const today = new Date().toISOString().split('T')[0]
+      const todayLog = stepsLogs.find((log: any) => log.date === today)
+      setTodaySteps(todayLog || null)
     } catch (error) {
       console.error('Failed to load steps:', error)
     }

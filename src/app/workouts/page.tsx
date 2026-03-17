@@ -49,12 +49,11 @@ export default function WorkoutsPage() {
 
   async function loadWorkouts() {
     try {
-      const response = await fetch('/api/workouts')
-      const data = await response.json()
-      if (data.success) {
-        setWorkouts(data.data)
-        localStorage.setItem('fitmate-workouts', JSON.stringify(data.data))
-      }
+      // Читаем напрямую из localStorage
+      const workoutsSaved = localStorage.getItem('fitmate-workouts')
+      const workouts = workoutsSaved ? JSON.parse(workoutsSaved) : []
+      
+      setWorkouts(workouts)
     } catch (error) {
       console.error('Failed to load workouts:', error)
     }
