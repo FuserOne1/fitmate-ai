@@ -130,6 +130,7 @@ export default function WorkoutsPage() {
 
     try {
       const workoutData = {
+        id: Date.now().toString(),
         workout_type: parsedWorkout.workout_type,
         workout_date: new Date().toISOString(),
         duration_minutes: parsedWorkout.duration_minutes,
@@ -142,19 +143,17 @@ export default function WorkoutsPage() {
         photo_url: selectedPhoto,
       }
 
-      const response = await fetch('/api/workouts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(workoutData),
-      })
-      const data = await response.json()
-      if (data.success) {
-        loadWorkouts()
-        setInput('')
-        setParsedWorkout(null)
-        setShowConfirm(false)
-        setSelectedPhoto(null)
-      }
+      // Сохраняем в localStorage
+      const workoutsSaved = localStorage.getItem('fitmate-workouts')
+      let workouts = workoutsSaved ? JSON.parse(workoutsSaved) : []
+      workouts.unshift(workoutData)
+      localStorage.setItem('fitmate-workouts', JSON.stringify(workouts))
+
+      loadWorkouts()
+      setInput('')
+      setParsedWorkout(null)
+      setShowConfirm(false)
+      setSelectedPhoto(null)
     } catch (error) {
       console.error('Save error:', error)
       alert('Не удалось сохранить тренировку')

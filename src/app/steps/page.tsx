@@ -125,28 +125,32 @@ export default function StepsPage() {
     try {
       const today = new Date().toISOString().split('T')[0]
       const distance = manualDistance ? parseFloat(manualDistance) : null
-      
+
       const stepsData = {
         date: today,
         steps,
         distance_km: distance,
-        calories_burned: Math.round(steps * 0.04), // ~0.04 ккал на шаг
+        calories_burned: Math.round(steps * 0.04),
         source: selectedPhoto ? 'screenshot' : 'manual',
         screenshot_url: selectedPhoto,
       }
 
-      const response = await fetch('/api/steps', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(stepsData),
-      })
-      const data = await response.json()
-      if (data.success) {
-        loadSteps()
-        setManualSteps('')
-        setManualDistance('')
-        setSelectedPhoto(null)
+      // Сохраняем в localStorage
+      const stepsSaved = localStorage.getItem('fitmate-steps')
+      let stepsLogs = stepsSaved ? JSON.parse(stepsSaved) : []
+      const todayIndex = stepsLogs.findIndex((log: any) => log.date === today)
+      
+      if (todayIndex >= 0) {
+        stepsLogs[todayIndex] = stepsData
+      } else {
+        stepsLogs.unshift(stepsData)
       }
+      localStorage.setItem('fitmate-steps', JSON.stringify(stepsLogs))
+
+      loadSteps()
+      setManualSteps('')
+      setManualDistance('')
+      setSelectedPhoto(null)
     } catch (error) {
       console.error('Save error:', error)
       alert('Не удалось сохранить шаги')
