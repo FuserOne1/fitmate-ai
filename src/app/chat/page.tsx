@@ -410,131 +410,20 @@ export default function ChatPage() {
   async function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    
-    // Проверка формата
+
     if (!file.type.startsWith('image/')) {
       alert('Пожалуйста, выбери изображение (JPG, PNG, HEIC)')
       return
     }
-    
+
     try {
-      setAnalyzingImage(true)
       const compressed = await compressImage(file)
-      
-      const response = await fetch('/api/ai/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          type: 'image', 
-          imageUrl: compressed, 
-          prompt: 'Ты эксперт по питанию. Проанализируй фото еды. Определи блюда, примерный вес и КБЖУ. Верни ТОЛЬКО JSON: {"items":[{"name":"название","calories":число,"protein":число,"fat":число,"carbs":число,"weight":число}],"total":{"calories":число,"protein":число,"fat":число,"carbs":число},"comment":"краткий комментарий на русском"}' 
-        }),
-      })
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('API Error:', response.status, errorText)
-        throw new Error(`HTTP ${response.status}: ${errorText}`)
-      }
-      
-      const data = await response.json()
-      console.log('AI response data:', data)
-
-      if (data.data) {
-        console.log('Raw data.data:', data.data)
-        // Очищаем от markdown-обертки (```json ... ```)
-        let jsonStr = data.data
-        // Пробуем разные варианты regex для markdown блоков
-        const markdownMatch = data.data.match(/```(?:json)?\s*([\s\S]*?)```/) ||
-                              data.data.match(/```\s*([\s\S]*?)```/)
-        if (markdownMatch) {
-          jsonStr = markdownMatch[1].trim()
-        } else {
-          // Если нет markdown-обертки, используем как есть
-          jsonStr = data.data
-        }
-
-        try {
-          const parsed = JSON.parse(jsonStr)
-          const foodEntry = { items: parsed.items || [], total: parsed.total || { calories: 0, protein: 0, fat: 0, carbs: 0 } }
-          
-          // Проверяем дубликаты с тем, что УЖЕ записано в дневник сегодня
-          const saved = localStorage.getItem('fitmate-diary')
-          const today = new Date().toISOString().split('T')[0]
-          let todayItems: Array<{name: string}> = []
-          
-          if (saved) {
-            try {
-              const logs = JSON.parse(saved)
-              const todayLog = logs.find((log: any) => log.date === today)
-              if (todayLog && todayLog.items) {
-                todayItems = todayLog.items
-              }
-            } catch {}
-          }
-          
-          // Фильтруем только новые продукты
-          const newItems = foodEntry.items.filter((item: {name: string}) => !isDuplicate(item.name, todayItems))
-          
-          if (newItems.length === 0) {
-            // Все продукты уже записаны сегодня
-            setMessages(prev => [...prev, { 
-              role: 'assistant', 
-              content: `📸 ${parsed.comment || 'Вот что я нашёл:'}\n\n✅ Это уже записано в дневнике сегодня! 💕`, 
-              timestamp: Date.now() 
-            }])
-          } else if (newItems.length < foodEntry.items.length) {
-            // Часть продуктов уже записана
-            const partialEntry = {
-              ...foodEntry,
-              items: newItems,
-              total: {
-                calories: newItems.reduce((sum: number, i: {calories: number}) => sum + i.calories, 0),
-                protein: newItems.reduce((sum: number, i: {protein: number}) => sum + i.protein, 0),
-                fat: newItems.reduce((sum: number, i: {fat: number}) => sum + i.fat, 0),
-                carbs: newItems.reduce((sum: number, i: {carbs: number}) => sum + i.carbs, 0)
-              }
-            }
-            setMessages(prev => [...prev, { 
-              role: 'assistant', 
-              content: `📸 ${parsed.comment || 'Вот что я нашёл:'}\n\n⚠️ Часть продуктов уже записана. Добавлю только новое:`, 
-              timestamp: Date.now(), 
-              foodEntry: partialEntry 
-            }])
-            setPendingFoodEntry(partialEntry)
-          } else {
-            // Все продукты новые
-            setPendingFoodEntry(foodEntry)
-            setMessages(prev => [...prev, { role: 'assistant', content: `📸 ${parsed.comment || 'Вот что я нашёл:'}`, timestamp: Date.now(), foodEntry }])
-          }
-        } catch (parseError: any) {
-          console.error('JSON parse error:', parseError, 'jsonStr:', jsonStr)
-          // Выводим ошибку в чат вместо alert
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: `😕 Не удалось распознать фото\n\n${parseError.message || 'Попробуй другое фото'}`,
-            timestamp: Date.now()
-          }])
-        }
-      } else {
-        console.error('Analysis failed:', data)
-        // Выводим ошибку в чат вместо alert
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `😕 Не удалось распознать фото\n\n${data.error || 'Попробуй другое фото'}`,
-          timestamp: Date.now()
-        }])
-      }
-    } catch (error: any) {
-      console.error('Image analysis error:', error)
-      // Выводим ошибку в чат вместо alert
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: `😕 Ошибка анализа\n\n${error.message || 'Попробуй ещё раз'}`, 
-        timestamp: Date.now() 
-      }])
+      setSelectedImage(compressed)
+      setImageDescription('')
+    } catch (error) {
+      console.error('Image select error:', error)
+      alert('Ошибка загрузки фото')
     } finally {
-      setAnalyzingImage(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }

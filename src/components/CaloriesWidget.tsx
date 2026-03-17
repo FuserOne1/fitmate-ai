@@ -83,7 +83,7 @@ export default function CaloriesWidget() {
         </svg>
         <Utensils className="w-6 h-6 text-white" />
         {diaryData.calories > 0 && (
-          <span className="absolute -top-1 -right-1 w-6 h-6 bg-white text-[hsl(var(--primary))] text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
+          <span className="absolute -top-1 -right-1 min-w-[24px] h-6 bg-white text-[hsl(var(--primary))] text-[9px] font-bold rounded-full flex items-center justify-center shadow-md px-1.5">
             {diaryData.calories}
           </span>
         )}
