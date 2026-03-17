@@ -65,9 +65,36 @@ function parseFoodEntry(content: string) {
 function parseWaterEntry(content: string) {
   const match = content.match(/\[WATER_ENTRY\]([\s\S]*?)\[\/WATER_ENTRY\]/)
   if (!match) return null
-  try { 
+  try {
     const parsed = JSON.parse(match[1].trim())
     return { volume: parsed.volume || 0 }
+  } catch { return null }
+}
+
+function parseWorkoutEntry(content: string) {
+  const match = content.match(/\[WORKOUT_ENTRY\]([\s\S]*?)\[\/WORKOUT_ENTRY\]/)
+  if (!match) return null
+  try {
+    const parsed = JSON.parse(match[1].trim())
+    return {
+      description: parsed.description || '',
+      type: parsed.type || 'other',
+      duration_minutes: parsed.duration_minutes || 0,
+      calories_burned: parsed.calories_burned || 0,
+    }
+  } catch { return null }
+}
+
+function parseStepsEntry(content: string) {
+  const match = content.match(/\[STEPS_ENTRY\]([\s\S]*?)\[\/STEPS_ENTRY\]/)
+  if (!match) return null
+  try {
+    const parsed = JSON.parse(match[1].trim())
+    return {
+      steps: parsed.steps || 0,
+      distance_km: parsed.distance_km || 0,
+      calories_burned: parsed.calories_burned || 0,
+    }
   } catch { return null }
 }
 
@@ -75,6 +102,8 @@ function cleanContent(content: string) {
   return content
     .replace(/\[FOOD_ENTRY\][\s\S]*?\[\/FOOD_ENTRY\]/g, '')
     .replace(/\[WATER_ENTRY\][\s\S]*?\[\/WATER_ENTRY\]/g, '')
+    .replace(/\[WORKOUT_ENTRY\][\s\S]*?\[\/WORKOUT_ENTRY\]/g, '')
+    .replace(/\[STEPS_ENTRY\][\s\S]*?\[\/STEPS_ENTRY\]/g, '')
     .trim()
 }
 
@@ -111,6 +140,8 @@ export default function ChatPage() {
   const [diaryData, setDiaryData] = useState<DiaryData | null>(null)
   const [waterData, setWaterData] = useState<WaterData | null>(null)
   const [weightData, setWeightData] = useState<WeightDataType>(null)
+  const [workoutStats, setWorkoutStats] = useState<{count: number, calories: number, minutes: number} | null>(null)
+  const [stepsData, setStepsData] = useState<{steps: number, distance_km?: number, calories_burned?: number} | null>(null)
   const [pendingFoodEntry, setPendingFoodEntry] = useState<Message['foodEntry'] | null>(null)
   const [pendingWaterVolume, setPendingWaterVolume] = useState<number | null>(null)
   const [input, setInput] = useState('')
@@ -129,7 +160,7 @@ export default function ChatPage() {
           if (logs[0]?.total) setDiaryData(logs[0].total)
         } catch {}
       }
-      
+
       // Вода
       const waterSaved = localStorage.getItem('fitmate-water')
       if (waterSaved) {
@@ -142,7 +173,7 @@ export default function ChatPage() {
           }
         } catch {}
       }
-      
+
       // Вес
       const weightSaved = localStorage.getItem('fitmate-weight')
       if (weightSaved) {
@@ -157,10 +188,43 @@ export default function ChatPage() {
           }
         } catch {}
       }
+
+      // Тренировки (за неделю)
+      const workoutsSaved = localStorage.getItem('fitmate-workouts')
+      if (workoutsSaved) {
+        try {
+          const logs = JSON.parse(workoutsSaved)
+          const weekAgo = new Date()
+          weekAgo.setDate(weekAgo.getDate() - 7)
+          const weekWorkouts = logs.filter((w: any) => new Date(w.workout_date) >= weekAgo)
+          setWorkoutStats({
+            count: weekWorkouts.length,
+            calories: weekWorkouts.reduce((sum: number, w: any) => sum + (w.calories_burned || 0), 0),
+            minutes: weekWorkouts.reduce((sum: number, w: any) => sum + (w.duration_minutes || 0), 0)
+          })
+        } catch {}
+      }
+
+      // Шаги (за сегодня)
+      const stepsSaved = localStorage.getItem('fitmate-steps')
+      if (stepsSaved) {
+        try {
+          const logs = JSON.parse(stepsSaved)
+          const today = new Date().toISOString().split('T')[0]
+          const todayLog = logs.find((log: any) => log.date === today)
+          if (todayLog) {
+            setStepsData({
+              steps: todayLog.steps || 0,
+              distance_km: todayLog.distance_km,
+              calories_burned: todayLog.calories_burned
+            })
+          }
+        } catch {}
+      }
     }
-    
+
     loadData()
-    
+
     // Слушаем изменения в localStorage
     const handleStorageChange = () => loadData()
     window.addEventListener('storage', handleStorageChange)
@@ -186,37 +250,98 @@ export default function ChatPage() {
       const diaryContext = diaryData ? `Съедено на ${diaryData.calories} ккал (Б: ${diaryData.protein}г, Ж: ${diaryData.fat}г, У: ${diaryData.carbs}г)` : ''
       const waterContext = waterData ? `Выпито воды: ${waterData.intake} мл` : ''
       const weightContext = weightData ? `Вес: ${weightData.weight} кг${weightData.fatPercent ? `, жир: ${weightData.fatPercent}%` : ''}${weightData.muscleMass ? `, мышцы: ${weightData.muscleMass}кг` : ''}` : ''
-      
+
       // Загружаем цели
       const goalsSaved = typeof window !== 'undefined' ? localStorage.getItem('fitmate-goals') : null
       const goals = goalsSaved ? JSON.parse(goalsSaved) : { calories: 2000 }
       const goalsContext = `Норма калорий: ${goals.calories} ккал`
+
+      // Тренировки
+      const workoutContext = workoutStats ? `${workoutStats.count} тренировок за неделю (${workoutStats.calories} ккал, ${Math.round(workoutStats.minutes / 60)} ч)` : ''
       
+      // Шаги
+      const stepsContext = stepsData ? `${stepsData.steps.toLocaleString()} шагов${stepsData.distance_km ? ` (${stepsData.distance_km} км)` : ''}${stepsData.calories_burned ? `, ${stepsData.calories_burned} ккал` : ''}` : ''
+
       const healthContext = [diaryContext, waterContext, weightContext, goalsContext].filter(Boolean).join('. ')
-      
+
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: currentMessages.map(m => ({ role: m.role, content: m.content })), 
-          diaryContext: healthContext 
+        body: JSON.stringify({
+          messages: currentMessages.map(m => ({ role: m.role, content: m.content })),
+          diaryContext: healthContext,
+          workoutContext,
+          stepsContext,
         }),
       })
       const data = await response.json()
       if (response.ok && data.data) {
         const foodEntry = parseFoodEntry(data.data)
         const waterEntry = parseWaterEntry(data.data)
+        const workoutEntry = parseWorkoutEntry(data.data)
+        const stepsEntry = parseStepsEntry(data.data)
 
-        // Сначала проверяем WATER_ENTRY (вода)
+        // Проверяем WATER_ENTRY (вода)
         if (waterEntry && waterEntry.volume > 0) {
           setPendingWaterVolume(waterEntry.volume)
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: `${cleanContent(data.data)}\n\n💧 Записать ${waterEntry.volume} мл воды?`, 
-            timestamp: Date.now() 
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `${cleanContent(data.data)}\n\n💧 Записать ${waterEntry.volume} мл воды?`,
+            timestamp: Date.now()
           }])
         }
-        // Потом проверяем FOOD_ENTRY (еда)
+        // Проверяем WORKOUT_ENTRY (тренировка)
+        else if (workoutEntry) {
+          // Сохраняем тренировку в localStorage
+          const workoutsSaved = localStorage.getItem('fitmate-workouts')
+          const workouts = workoutsSaved ? JSON.parse(workoutsSaved) : []
+          const newWorkout = {
+            id: Date.now().toString(),
+            workout_type: workoutEntry.type,
+            workout_date: new Date().toISOString(),
+            duration_minutes: workoutEntry.duration_minutes,
+            calories_burned: workoutEntry.calories_burned,
+            notes: workoutEntry.description,
+          }
+          workouts.unshift(newWorkout)
+          localStorage.setItem('fitmate-workouts', JSON.stringify(workouts))
+          
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `${cleanContent(data.data)}\n\n✅ Тренировка записана!`,
+            timestamp: Date.now()
+          }])
+        }
+        // Проверяем STEPS_ENTRY (шаги)
+        else if (stepsEntry) {
+          // Сохраняем шаги в localStorage
+          const stepsSaved = localStorage.getItem('fitmate-steps')
+          let stepsLogs = stepsSaved ? JSON.parse(stepsSaved) : []
+          const today = new Date().toISOString().split('T')[0]
+          const todayIndex = stepsLogs.findIndex((log: any) => log.date === today)
+          
+          const newStepsLog = {
+            date: today,
+            steps: stepsEntry.steps,
+            distance_km: stepsEntry.distance_km,
+            calories_burned: stepsEntry.calories_burned,
+            source: 'chat' as const,
+          }
+          
+          if (todayIndex >= 0) {
+            stepsLogs[todayIndex] = newStepsLog
+          } else {
+            stepsLogs.unshift(newStepsLog)
+          }
+          localStorage.setItem('fitmate-steps', JSON.stringify(stepsLogs))
+          
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `${cleanContent(data.data)}\n\n✅ Шаги записаны!`,
+            timestamp: Date.now()
+          }])
+        }
+        // Проверяем FOOD_ENTRY (еда)
         else if (foodEntry) {
           // Получаем реально записанные продукты из localStorage
           const saved = localStorage.getItem('fitmate-diary')
@@ -268,7 +393,7 @@ export default function ChatPage() {
             setPendingFoodEntry(foodEntry)
           }
         } else {
-          // Нет FOOD_ENTRY или WATER_ENTRY - просто показываем ответ
+          // Нет FOOD_ENTRY, WATER_ENTRY, WORKOUT_ENTRY или STEPS_ENTRY - просто показываем ответ
           setMessages(prev => [...prev, { role: 'assistant', content: cleanContent(data.data), timestamp: Date.now() }])
         }
       } else {

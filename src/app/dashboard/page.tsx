@@ -102,7 +102,7 @@ export default function DashboardPage() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-rose-100 safe-bottom">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-rose-100 safe-bottom">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-around">
           <Link href="/" className="flex flex-col items-center p-2 text-rose-500">
             <span className="text-xl">🏠</span>

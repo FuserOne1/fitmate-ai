@@ -3,7 +3,7 @@ import { chatWithAI } from '@/lib/ai/openrouter'
 
 export async function POST(request: NextRequest) {
   const apiKey = process.env.OPENROUTER_API_KEY
-  
+
   if (!apiKey) {
     console.error('❌ OPENROUTER_API_KEY is missing!')
     return NextResponse.json(
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { messages, diaryContext } = body
+    const { messages, diaryContext, workoutContext, stepsContext } = body
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -58,7 +58,28 @@ export async function POST(request: NextRequest) {
    }
    [/FOOD_ENTRY]
 
-3️⃣ ЕСЛИ ПРОСТО ВОПРОС или разговор - отвечай обычно без блоков
+3️⃣ ЕСЛИ ТРЕНИРОВКА (занималась, бегала, ходила, йога, пилатес и т.д.):
+   Используй формат WORKOUT_ENTRY:
+
+   [WORKOUT_ENTRY]
+   {
+     "description": "Йога 45 минут",
+     "type": "yoga",
+     "duration_minutes": 45,
+     "calories_burned": 180
+   }
+   [/WORKOUT_ENTRY]
+
+   Типы: yoga, pilates, cardio, strength, hiit, stretching, walking, other
+
+4️⃣ ЕСЛИ ШАГИ (прошла шагов, прошла расстояние и т.д.):
+   Используй формат STEPS_ENTRY:
+
+   [STEPS_ENTRY]
+   {"steps": 5000, "distance_km": 3.5, "calories_burned": 150}
+   [/STEPS_ENTRY]
+
+5️⃣ ЕСЛИ ПРОСТО ВОПРОС или разговор - отвечай обычно без блоков
 
 ВАЖНО:
 - Вода НЕ должна записываться как FOOD_ENTRY с 0 ккал
@@ -83,10 +104,24 @@ export async function POST(request: NextRequest) {
 - Обращайся к пользователю на "ты"
 - Будь конкретным в советах`
 
-    // Добавляем контекст о съеденном и воде если есть
-    const contextMessage = diaryContext
-      ? `\n\n[КОНТЕКСТ СЕГОДНЯШНЕГО ДНЯ: ${diaryContext}]\n\nВАЖНО: Если Маша превысила калории, мягко намекни что стоит притормозить. Похвали за успехи и поддержи!`
-      : ''
+    // Добавляем контекст о съеденном, воде, тренировках и шагах если есть
+    let contextMessage = ''
+    
+    if (diaryContext) {
+      contextMessage += `\n\n[КОНТЕКСТ ПИТАНИЯ СЕГОДНЯ: ${diaryContext}]`
+    }
+    
+    if (workoutContext) {
+      contextMessage += `\n\n[ТРЕНИРОВКИ ЗА НЕДЕЛЮ: ${workoutContext}]`
+    }
+    
+    if (stepsContext) {
+      contextMessage += `\n\n[ШАГИ СЕГОДНЯ: ${stepsContext}]`
+    }
+    
+    if (contextMessage) {
+      contextMessage += '\n\nВАЖНО: Если Маша превысила калории, мягко намекни что стоит притормозить. Похвали за успехи (тренировки, шаги) и поддержи!'
+    }
 
     // Проверяем превышение калорий
     let calorieWarning = ''

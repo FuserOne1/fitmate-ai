@@ -165,15 +165,98 @@ CREATE TABLE IF NOT EXISTS ai_chats (
 CREATE TABLE IF NOT EXISTS reminders (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
-  
-  reminder_type TEXT CHECK (reminder_type IN ('meal', 'water', 'weigh_in', 'log_food')) NOT NULL,
+
+  reminder_type TEXT CHECK (reminder_type IN ('meal', 'water', 'weigh_in', 'log_food', 'workout')) NOT NULL,
   title TEXT NOT NULL,
-  
+
   time TIME NOT NULL,
   days_of_week INTEGER[], -- [0, 1, 2, 3, 4, 5, 6] - дни недели (0 = воскресенье)
-  
+
   enabled BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Тренировки
+CREATE TABLE IF NOT EXISTS workouts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+
+  -- Дата и тип
+  workout_date TIMESTAMPTZ DEFAULT NOW(),
+  workout_type TEXT CHECK (workout_type IN ('yoga', 'pilates', 'cardio', 'strength', 'hiit', 'stretching', 'walking', 'other')) NOT NULL,
+  
+  -- Параметры
+  duration_minutes INTEGER,
+  calories_burned INTEGER,
+  distance_km DECIMAL(5,2),
+  
+  -- Упражнения (JSON для гибкости)
+  exercises JSONB, -- [{name, sets, reps, weight, duration}]
+  
+  -- AI данные
+  ai_analysis TEXT,
+  ai_tips JSONB, -- [советы по восстановлению, питанию]
+  
+  -- Настроение
+  mood_before INTEGER CHECK (mood_before BETWEEN 1 AND 5),
+  mood_after INTEGER CHECK (mood_after BETWEEN 1 AND 5),
+  
+  -- Заметки
+  notes TEXT,
+  
+  -- План/факт
+  is_planned BOOLEAN DEFAULT false,
+  plan_id UUID, -- ссылка на план тренировки если есть
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Планы тренировок (календарь)
+CREATE TABLE IF NOT EXISTS workout_plans (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  
+  title TEXT NOT NULL,
+  description TEXT,
+  
+  -- Параметры плана
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  workout_days INTEGER[], -- [1, 3, 5] - дни недели (1=понедельник)
+  workout_type TEXT NOT NULL,
+  duration_minutes INTEGER,
+  
+  -- AI генерация
+  ai_generated BOOLEAN DEFAULT false,
+  ai_prompt TEXT,
+  
+  active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Шаги (ежедневный трекинг)
+CREATE TABLE IF NOT EXISTS daily_steps (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  
+  date DATE DEFAULT CURRENT_DATE,
+  steps INTEGER DEFAULT 0,
+  distance_km DECIMAL(5,2),
+  calories_burned INTEGER,
+  
+  -- Источник
+  source TEXT CHECK (source IN ('manual', 'screenshot', 'apple_health', 'google_fit', 'fitbit', 'strava')) DEFAULT 'manual',
+  screenshot_url TEXT,
+  
+  -- AI анализ скриншота
+  ai_parsed BOOLEAN DEFAULT false,
+  ai_data JSONB,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(user_id, date)
 );
 
 -- ============================================
@@ -357,6 +440,87 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- Политики для workouts
+ALTER TABLE workouts ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свои тренировки') THEN
+    CREATE POLICY "Пользователи видят свои тренировки"
+      ON workouts FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи создают свои тренировки') THEN
+    CREATE POLICY "Пользователи создают свои тренировки"
+      ON workouts FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи обновляют свои тренировки') THEN
+    CREATE POLICY "Пользователи обновляют свои тренировки"
+      ON workouts FOR UPDATE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи удаляют свои тренировки') THEN
+    CREATE POLICY "Пользователи удаляют свои тренировки"
+      ON workouts FOR DELETE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
+
+-- Политики для workout_plans
+ALTER TABLE workout_plans ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свои планы тренировок') THEN
+    CREATE POLICY "Пользователи видят свои планы тренировок"
+      ON workout_plans FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи управляют своими планами тренировок') THEN
+    CREATE POLICY "Пользователи управляют своими планами тренировок"
+      ON workout_plans FOR ALL
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
+
+-- Политики для daily_steps
+ALTER TABLE daily_steps ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи видят свои шаги') THEN
+    CREATE POLICY "Пользователи видят свои шаги"
+      ON daily_steps FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи создают свои шаги') THEN
+    CREATE POLICY "Пользователи создают свои шаги"
+      ON daily_steps FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи обновляют свои шаги') THEN
+    CREATE POLICY "Пользователи обновляют свои шаги"
+      ON daily_steps FOR UPDATE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
+
 -- ============================================
 -- ФУНКЦИИ
 -- ============================================
@@ -391,9 +555,32 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_profiles_updated_at
-  BEFORE UPDATE ON profiles
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+-- Триггер для profiles (с проверкой на существование)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_profiles_updated_at') THEN
+    CREATE TRIGGER update_profiles_updated_at
+      BEFORE UPDATE ON profiles
+      FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+  END IF;
+END $$;
+
+-- Триггер для workouts
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_workouts_updated_at') THEN
+    CREATE TRIGGER update_workouts_updated_at
+      BEFORE UPDATE ON workouts
+      FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+  END IF;
+END $$;
+
+-- Триггер для daily_steps
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_daily_steps_updated_at') THEN
+    CREATE TRIGGER update_daily_steps_updated_at
+      BEFORE UPDATE ON daily_steps
+      FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+  END IF;
+END $$;
 
 -- ============================================
 -- STORAGE BUCKETS
@@ -421,6 +608,12 @@ END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'avatars') THEN
     INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM storage.buckets WHERE id = 'steps-screenshots') THEN
+    INSERT INTO storage.buckets (id, name, public) VALUES ('steps-screenshots', 'steps-screenshots', true);
   END IF;
 END $$;
 
@@ -458,6 +651,14 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи могут загружать скриншоты шагов') THEN
+    CREATE POLICY "Пользователи могут загружать скриншоты шагов"
+      ON storage.objects FOR INSERT
+      WITH CHECK (bucket_id = 'steps-screenshots' AND auth.uid()::text = (storage.foldername(name))[1]);
+  END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Пользователи могут видеть свои файлы') THEN
     CREATE POLICY "Пользователи могут видеть свои файлы"
       ON storage.objects FOR SELECT
@@ -485,3 +686,6 @@ CREATE INDEX IF NOT EXISTS idx_body_photos_user ON body_photos(user_id, created_
 CREATE INDEX IF NOT EXISTS idx_scale_screenshots_user ON scale_screenshots(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_ai_chats_user ON ai_chats(user_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_reminders_user ON reminders(user_id);
+CREATE INDEX IF NOT EXISTS idx_workouts_user ON workouts(user_id, workout_date);
+CREATE INDEX IF NOT EXISTS idx_workout_plans_user ON workout_plans(user_id, active);
+CREATE INDEX IF NOT EXISTS idx_daily_steps_user_date ON daily_steps(user_id, date);
