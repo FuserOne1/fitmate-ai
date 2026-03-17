@@ -11,6 +11,7 @@ type Message = {
   role: 'user' | 'assistant'
   content: string
   timestamp: number
+  image?: string
   foodEntry?: {
     items: Array<{ name: string; calories: number; protein: number; fat: number; carbs: number; weight?: number }>
     total: { calories: number; protein: number; fat: number; carbs: number }
@@ -147,6 +148,8 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [analyzingImage, setAnalyzingImage] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [imageDescription, setImageDescription] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -536,6 +539,127 @@ export default function ChatPage() {
     }
   }
 
+  async function sendImageWithDescription() {
+    if (!selectedImage) return
+    
+    setAnalyzingImage(true)
+    try {
+      const prompt = imageDescription 
+        ? `Ты эксперт по питанию. Проанализируй фото еды. Описание от пользователя: "${imageDescription}". Определи блюда, примерный вес и КБЖУ. Верни ТОЛЬКО JSON: {"items":[{"name":"название","calories":число,"protein":число,"fat":число,"carbs":число,"weight":число}],"total":{"calories":число,"protein":число,"fat":число,"carbs":число},"comment":"краткий комментарий на русском"}`
+        : 'Ты эксперт по питанию. Проанализируй фото еды. Определи блюда, примерный вес и КБЖУ. Верни ТОЛЬКО JSON: {"items":[{"name":"название","calories":число,"protein":число,"fat":число,"carbs":число,"weight":число}],"total":{"calories":число,"protein":число,"fat":число,"carbs":число},"comment":"краткий комментарий на русском"}'
+
+      // Добавляем фото с описанием как сообщение пользователя
+      setMessages(prev => [...prev, {
+        role: 'user',
+        content: imageDescription || '📸 Фото еды',
+        image: selectedImage,
+        timestamp: Date.now()
+      }])
+
+      const response = await fetch('/api/ai/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'image',
+          imageUrl: selectedImage,
+          prompt,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
+      }
+
+      const data = await response.json()
+
+      if (data.data) {
+        let jsonStr = data.data
+        const markdownMatch = data.data.match(/```(?:json)?\s*([\s\S]*?)```/) ||
+                              data.data.match(/```\s*([\s\S]*?)```/)
+        if (markdownMatch) {
+          jsonStr = markdownMatch[1].trim()
+        }
+
+        try {
+          const parsed = JSON.parse(jsonStr)
+          const foodEntry = { items: parsed.items || [], total: parsed.total || { calories: 0, protein: 0, fat: 0, carbs: 0 } }
+
+          const saved = localStorage.getItem('fitmate-diary')
+          const today = new Date().toISOString().split('T')[0]
+          let todayItems: Array<{name: string}> = []
+
+          if (saved) {
+            try {
+              const logs = JSON.parse(saved)
+              const todayLog = logs.find((log: any) => log.date === today)
+              if (todayLog && todayLog.items) {
+                todayItems = todayLog.items
+              }
+            } catch {}
+          }
+
+          const newItems = foodEntry.items.filter((item: {name: string}) => !isDuplicate(item.name, todayItems))
+
+          if (newItems.length === 0) {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `📸 ${parsed.comment || 'Вот что я нашла:'}\n\n✅ Это уже записано в дневнике сегодня! 💕`,
+              timestamp: Date.now()
+            }])
+          } else if (newItems.length < foodEntry.items.length) {
+            const partialEntry = {
+              ...foodEntry,
+              items: newItems,
+              total: {
+                calories: newItems.reduce((sum: number, i: {calories: number}) => sum + i.calories, 0),
+                protein: newItems.reduce((sum: number, i: {protein: number}) => sum + i.protein, 0),
+                fat: newItems.reduce((sum: number, i: {fat: number}) => sum + i.fat, 0),
+                carbs: newItems.reduce((sum: number, i: {carbs: number}) => sum + i.carbs, 0)
+              }
+            }
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `📸 ${parsed.comment || 'Вот что я нашла:'}\n\n⚠️ Часть продуктов уже записана. Добавлю только новое:`,
+              timestamp: Date.now(),
+              foodEntry: partialEntry
+            }])
+            setPendingFoodEntry(partialEntry)
+          } else {
+            setPendingFoodEntry(foodEntry)
+            setMessages(prev => [...prev, { 
+              role: 'assistant', 
+              content: `📸 ${parsed.comment || 'Вот что я нашла:'}`, 
+              timestamp: Date.now(), 
+              foodEntry 
+            }])
+          }
+        } catch (parseError: any) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `😕 Не удалось распознать фото\n\n${parseError.message || 'Попробуй другое фото'}`,
+            timestamp: Date.now()
+          }])
+        }
+      }
+    } catch (error: any) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `😕 Ошибка анализа\n\n${error.message || 'Попробуй ещё раз'}`,
+        timestamp: Date.now()
+      }])
+    } finally {
+      setAnalyzingImage(false)
+      setSelectedImage(null)
+      setImageDescription('')
+    }
+  }
+
+  function cancelImageSelect() {
+    setSelectedImage(null)
+    setImageDescription('')
+  }
+
   function addFoodToDiary() {
     if (!pendingFoodEntry) return
     const saved = localStorage.getItem('fitmate-diary')
@@ -668,16 +792,92 @@ export default function ChatPage() {
 
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">
           {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div 
+              key={i} 
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-message-in`}
+              style={{ animationDelay: `${i * 0.05}s` }}
+            >
               <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${msg.role === 'user' ? 'bg-[hsl(var(--primary))] text-white rounded-br-md' : 'bg-[hsl(var(--card))] text-[hsl(var(--text-primary))] border border-[hsl(var(--border))] rounded-bl-md'}`}>
+                {/* Фото если есть */}
+                {msg.image && (
+                  <img 
+                    src={msg.image} 
+                    alt="Attached" 
+                    className="w-full max-w-xs rounded-lg mb-2 border border-white/20"
+                  />
+                )}
+                {/* Контент */}
                 <p className="text-sm whitespace-pre-wrap">{msg.role === 'assistant' ? renderMarkdown(msg.content) : msg.content}</p>
+                {/* Время */}
                 <p className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/70' : 'text-[hsl(var(--text-secondary))]'}`}>{new Date(msg.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
             </div>
           ))}
-          {loading && (<div className="flex justify-start"><div className="bg-[hsl(var(--card))] rounded-2xl px-4 py-3 border border-[hsl(var(--border))]"><div className="flex gap-1"><div className="w-2 h-2 bg-[hsl(var(--primary))] rounded-full animate-bounce" /><div className="w-2 h-2 bg-[hsl(var(--primary))] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} /><div className="w-2 h-2 bg-[hsl(var(--primary))] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} /></div></div></div>)}
+          {loading && (
+            <div className="flex justify-start animate-message-in">
+              <div className="bg-[hsl(var(--card))] rounded-2xl px-4 py-3 border border-[hsl(var(--border))]">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-[hsl(var(--primary))] rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-[hsl(var(--primary))] rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                  <div className="w-2 h-2 bg-[hsl(var(--primary))] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                </div>
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Модальное окно для фото с описанием */}
+        {selectedImage && (
+          <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-[hsl(var(--card))] rounded-3xl p-6 max-w-md w-full shadow-2xl border border-[hsl(var(--border))] animate-message-in">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-[hsl(var(--text-primary))]">📸 Фото еды</h2>
+                <button onClick={cancelImageSelect} className="p-2 hover:bg-[hsl(var(--muted))] rounded-xl transition-colors">
+                  <span className="text-xl text-[hsl(var(--text-secondary))]">×</span>
+                </button>
+              </div>
+              
+              {/* Превью фото */}
+              <img src={selectedImage} alt="Preview" className="w-full h-48 object-cover rounded-xl mb-4" />
+              
+              {/* Описание */}
+              <div className="mb-4">
+                <label className="text-sm font-medium text-[hsl(var(--text-primary))] mb-2 block">
+                  Описание (необязательно)
+                </label>
+                <textarea
+                  value={imageDescription}
+                  onChange={(e) => setImageDescription(e.target.value)}
+                  placeholder="Например: завтракала овсянкой с ягодами..."
+                  rows={3}
+                  className="w-full resize-none bg-[hsl(var(--muted))] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))]/50 text-[hsl(var(--text-primary))]"
+                />
+              </div>
+              
+              {/* Кнопки */}
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelImageSelect}
+                  className="flex-1 py-3 bg-[hsl(var(--muted))] text-[hsl(var(--text-primary))] rounded-xl hover:bg-[hsl(var(--muted))]/80 transition-colors font-medium"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={sendImageWithDescription}
+                  disabled={analyzingImage}
+                  className={`flex-1 py-3 bg-[hsl(var(--primary))] text-white rounded-xl hover:opacity-90 disabled:opacity-50 transition-colors font-medium flex items-center justify-center gap-2`}
+                >
+                  {analyzingImage ? (
+                    <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />Анализ...</>
+                  ) : (
+                    <><Send className="w-5 h-5" />Отправить</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mt-auto bg-[hsl(var(--card))] rounded-2xl p-3 shadow-lg border border-[hsl(var(--border))]">
           <div className="flex items-end gap-2">
